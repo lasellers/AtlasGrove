@@ -16,7 +16,6 @@ use Monolog\Monolog;
 
 class TigerlineRender extends Tigerline
 {
-    
     private $zoom=0;
     
     private $compressed=false;
@@ -905,8 +904,9 @@ private function getColor($im,string $type,$alpha=0)
     }
 }
 
-private function getFillColor($im,string $type,$alpha=70)
+private function getFillColor($im,string $type,$alpha=90)
 {
+//    echo "type=$type\n";
     switch($type)
     {
         case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
@@ -915,8 +915,8 @@ private function getFillColor($im,string $type,$alpha=70)
             break; //landmark
         case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
             break; //water
-        case 'E': return imagecolorallocatealpha($im,0,0,0,$alpha);
-            break;
+        case 'E': return imagecolorallocatealpha($im,200,100,100,$alpha);
+            break; //county
         case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
             break;
         case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);

@@ -2,6 +2,8 @@
 ## By Lewis Sellers (aka Min)
 ## Intrafoundation Software
 
+(Currently being Developed/Refactored)
+
 AtlasGrove takes Tiger/Line shapefiles from the US Census Bureau and renders them into usable images.
 
 Version 2.x of this software is a Symfony 3.x rewrite of older bespoke/framework software.

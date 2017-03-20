@@ -844,14 +844,13 @@ public function cacheCountiesList(string $filter="") {
     return $records;
 }
 
-
-
-
-private $county_subtypes=[
+private $tigerline_subtypes=[
 ['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
 ['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
 ['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
 ['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
+//['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
+//['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
 ];
 
 protected function getFilesForId(string $id): array
@@ -864,7 +863,7 @@ protected function getFilesForId(string $id): array
     {
         case 0:
         $file="/fe_{$this->yearfp}_us_state";
-        foreach($this->county_subtypes as $subtype)
+        foreach($this->tigerline_subtypes as $subtype)
         {
             $subtype['nameField']='NAMELSAD';
             $prefix=$subtype['prefix'];
@@ -888,7 +887,7 @@ protected function getFilesForId(string $id): array
             $state_folder=$dir->getRelativePathname();
     }
     $file= "{$state_folder}/fe_{$this->yearfp}_{$id}_county";
-    foreach($this->county_subtypes as $subtype)
+    foreach($this->tigerline_subtypes as $subtype)
     {
         $subtype['nameField']='NAMELSAD';
         
@@ -921,7 +920,7 @@ foreach ($finder as $dir)
 
 $file= "{$state_folder}/{$county_folder}/fe_{$this->yearfp}_{$id}_";
 
-foreach($this->county_subtypes as $subtype)
+foreach($this->tigerline_subtypes as $subtype)
 {
     $prefix=$subtype['prefix'];
     $files[]= [

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "87885f6157b6c7104a72c9cbb05b6410",
+    "content-hash": "829257da4847d417161297826a5ba554",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -1256,6 +1256,54 @@
             "time": "2017-03-13T07:08:03+00:00"
         },
         {
+            "name": "nicolab/php-ftp-client",
+            "version": "v1.4.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Nicolab/php-ftp-client.git",
+                "reference": "0e0c7666bdc3fb9fc9e63b065c84979588101708"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Nicolab/php-ftp-client/zipball/0e0c7666bdc3fb9fc9e63b065c84979588101708",
+                "reference": "0e0c7666bdc3fb9fc9e63b065c84979588101708",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "FtpClient": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nicolas Tallefourtane",
+                    "email": "dev@nicolab.net",
+                    "homepage": "http://nicolab.net"
+                }
+            ],
+            "description": "A flexible FTP and SSL-FTP client for PHP. This lib provides helpers easy to use to manage the remote files.",
+            "homepage": "https://github.com/Nicolab/php-ftp-client",
+            "keywords": [
+                "file",
+                "ftp",
+                "helper",
+                "lib",
+                "server",
+                "sftp",
+                "ssl",
+                "ssl-ftp"
+            ],
+            "time": "2017-01-20T06:44:54+00:00"
+        },
+        {
             "name": "org.majkel/dbase",
             "version": "v1.1.1",
             "source": {
@@ -2322,45 +2370,6 @@
                 "framework"
             ],
             "time": "2017-03-10T18:35:48+00:00"
-        },
-        {
-            "name": "touki/ftp",
-            "version": "v1.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/touki653/php-ftp-wrapper.git",
-                "reference": "c4ddbc5ef286f02229ef379090fb2c3381da9cc5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/touki653/php-ftp-wrapper/zipball/c4ddbc5ef286f02229ef379090fb2c3381da9cc5",
-                "reference": "c4ddbc5ef286f02229ef379090fb2c3381da9cc5",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "Touki\\FTP": [
-                        "lib/",
-                        "tests/"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Touki",
-                    "email": "g.vincendon@vithemis.com"
-                }
-            ],
-            "description": "A fully object oriented library for PHP FTP functions",
-            "time": "2015-11-19T12:14:51+00:00"
         },
         {
             "name": "twbs/bootstrap",

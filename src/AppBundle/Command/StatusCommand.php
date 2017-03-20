@@ -10,6 +10,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 use AtlasGrove\Utils as Utils;
 use AtlasGrove\Tigerline as Tigerline;
+use AtlasGrove\TigerlineCache as TigerlineCache;
+use AtlasGrove\TigerlineRender as TigerlineRender;
 
 // php bin/console atlasgrove:status
 
@@ -29,21 +31,22 @@ class StatusCommand extends ContainerAwareCommand
         $io = new SymfonyStyle($input, $output);
         
         $util=new Utils($this->getContainer(),$io);
-        $tigerline=new Tigerline($this->getContainer(),$io);
+        $tigerlineCache=new TigerlineCache($this->getContainer(),$io);
+        $tigerlineRender=new TigerlineRender($this->getContainer(),$io);
         
         $io->table(
         ['Name','Value'],
         [
-        ['Root Path',$tigerline->getRootPath()],
-        ['Root Data Path',$tigerline->getRootDataPath()],
-        ['Data Path',$tigerline->getDataPath()],
-        ['Output Path',$tigerline->getOutputPath()],
-        ['Web Path',$tigerline->getWebPath()],
-        ['Map Path',$tigerline->getMapPath()],
-        ['State',$tigerline->getState()],
-        ['Year',$tigerline->getYear()],
-        ['Font',$tigerline->getFont()],
-        ['Cache TTL',$tigerline->getCacheTTL()]
+        ['Root Path',$tigerlineCache->getRootPath()],
+        ['Root Data Path',$tigerlineCache->getRootDataPath()],
+        ['Data Path',$tigerlineCache->getDataPath()],
+        ['Output Path',$tigerlineCache->getOutputPath()],
+        ['Web Path',$tigerlineCache->getWebPath()],
+        ['Map Path',$tigerlineCache->getMapPath()],
+        ['State',$tigerlineCache->getState()],
+        ['Year',$tigerlineCache->getYear()],
+        ['Cache TTL',$tigerlineCache->getCacheTTL()],
+        ['Font',$tigerlineRender->getFont()]
         ]
         );
         
