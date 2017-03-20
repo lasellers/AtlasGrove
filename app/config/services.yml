@@ -1,0 +1,16 @@
+# Learn more about services, parameters and containers at
+# http://symfony.com/doc/current/service_container.html
+parameters:
+    #parameter_name: value
+    web_dir: "%kernel.root_dir%/../web"
+    map_dir: "%kernel.root_dir%/../web/map"
+    output_dir: "%kernel.root_dir%/../web/output"
+    cache_ttl: 600
+
+services:
+    #app.menu_builder:
+    #    class: AppBundle\Menu\Builder
+    #    arguments: ["@knp_menu.factory"]
+     #   tags:
+     #       - { name: knp_menu.menu_builder, method: createMainMenu, alias: main }
+   #         - { name: knp_menu.menu_builder, method: createAdminMenu, alias: admin }
