@@ -37,7 +37,7 @@ class RenderCommand extends ContainerAwareCommand
         $this->addOption('lod',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         $this->addOption('region',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         $this->addOption('roi',null,InputOption::VALUE_REQUIRED,'If set, uses ROI:x1,y1,x2,y2');
-       $this->addOption('tiles',null,InputOption::VALUE_REQUIRED,'If set, uses tiles:x1,y1,x2,y2');
+        $this->addOption('tiles',null,InputOption::VALUE_REQUIRED,'If set, uses tiles:x1,y1,x2,y2');
         
         $this->addOption('all',null, InputOption::VALUE_NONE, 'If set, ...');
         $this->addOption('states',null,InputOption::VALUE_NONE,'If set, uses states');
@@ -98,15 +98,7 @@ class RenderCommand extends ContainerAwareCommand
             $render->setRegionType($region);
         }
         
-        $tiles = $input->getOption('tiles');
-        echo "tiles ************\n";
-        print_r($tiles);
-        echo "----";
-      
-       $roi = $input->getOption('roi');
-        echo "roi ************\n";
-        print_r($roi);
-        echo "----";
+        $roi = $input->getOption('roi');
         if(strlen($roi)>0) {
             $a=explode(",",$roi);
             $xmin=$a[0];
@@ -118,7 +110,7 @@ class RenderCommand extends ContainerAwareCommand
             'Xmin'=> $xmin,
             'Ymin'=> $ymin,
             'Xmax'=> $xmax,
-            'yMax'=> $ymax
+            'Ymax'=> $ymax
             ]);
         }
         

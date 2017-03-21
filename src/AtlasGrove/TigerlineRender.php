@@ -40,7 +40,7 @@ class TigerlineRender extends Tigerline
         $this->setAspectType();
         $this->setLODType();
         $this->setRegionType();
-        $this->resetRenderStats();
+        $this->resetstats();
         $this->font=$this->selectFont();
     }
     
@@ -118,10 +118,10 @@ class TigerlineRender extends Tigerline
         $this->logo=$state==true;
     }
     
-    private $renderStats;
-    public function resetRenderStats()
+    private $stats;
+    public function resetstats()
     {
-        $this->renderStats=[
+        $this->stats=[
         'file'=>0,
         'cache'=>0,
         'shape'=>0,
@@ -133,7 +133,10 @@ class TigerlineRender extends Tigerline
         'polygon'=>0,
         'box'=>0,
         'points culled'=>0,
-        'roi bounding boxes culled'=>0
+        'roi bounding box culled'=>0,
+        'roi bounding boxes culled'=>0,
+        'regions'=>0,
+        'region ids'=>''
         ];
     }
     private function printRenderStatistics()
@@ -141,7 +144,7 @@ class TigerlineRender extends Tigerline
         $this->io->section("Render Statistics");
         $this->io->table(
         ['Name','Value'],
-        $this->arrayToNameValue($this->renderStats)
+        $this->arrayToNameValue($this->stats)
         );
     }
     
@@ -158,12 +161,10 @@ class TigerlineRender extends Tigerline
         {
             $tigerlineCache->cacheShape($id);
             
-            //  $files=$this->getFilesForId($id);
+            $this->stats['regions']=1;
+            $this->stats['region ids']=$id;
             
-            //  foreach($files as $file)
-            //{
             $this->renderImageFromSingleCache($cacheFilename,$imageFilename);
-            // }
         }
         
         $this->printRenderStatistics();
@@ -180,11 +181,6 @@ class TigerlineRender extends Tigerline
     }
     
     
-    
-    
-    
-    
-    
     // *****************************************************************************
     
     /**
@@ -197,10 +193,9 @@ class TigerlineRender extends Tigerline
         foreach ($finder as $file) {
             $id=preg_replace("/[^0-9]/", "", $file->getRelativePathname());
             if($id>0) {
-                 $records[]=$id;
+                $records[]=$id;
             }
         }
-        
         return $records;
     }
     
@@ -210,50 +205,60 @@ class TigerlineRender extends Tigerline
         $this->cull=$cull;
     }
     
-    
+    /*
     protected function pointCulled(float $x, float $y): bool
     {
-        if($x>=$this->cull['Xmin'] && $x<=$this->cull['Xmax'] && $y>=$this->cull['Ymin'] && $y<=$this->cull['Ymax']) {
-            return false;
-        }
-        
-        $this->renderStats['points culled']++;
-        return true;
+    if($x>=$this->cull['Xmin'] && $x<=$this->cull['Xmax'] && $y>=$this->cull['Ymin'] && $y<=$this->cull['Ymax']) {
+    return false;
     }
     
-    protected function boundingBoxCulled(array $bound): bool
+    $this->stats['points culled']++;
+    return true;
+    }*/
+    
+    protected function inBounds(float $number, float $min, float $max): bool
     {
-        if($this->pointCulled($bound['Xmin'],$bound['Ymin']) && $this->pointCulled($bound['Xmax'],$bound['Ymax'])) {
-            return false;
+        return ($min<=$number && $number<=$max);
+    }
+    
+    protected function boundingBoxOverlap(array $bound): bool
+    {
+        if(
+        (
+        ($this->inBounds($bound['Xmin'],$this->cull['Xmin'],$this->cull['Xmax'])) ||
+        ($this->inBounds($bound['Xmax'],$this->cull['Xmin'],$this->cull['Xmax']))
+        ) && (
+        ($this->inBounds($bound['Ymin'],$this->cull['Ymin'],$this->cull['Ymax'])) ||
+        ($this->inBounds($bound['Ymax'],$this->cull['Ymin'],$this->cull['Ymax']))
+        )
+        ) {
+            $this->stats['roi bounding box culled']++;
+            return true;
         }
-        
-        $this->renderStats['roi bounding boxes culled']++;
-        return true;
+        return false;
     }
     
     protected function boundingBoxesCulled(array $bounds): bool
     {
         foreach($bounds as $bound)
         {
-            if(!$this->boundingBoxCulled($bound)) {
+            if(!$this->boundingBoxOverlap($bound)) {
                 return false;
             }
         }
         
-        //        $this->renderStats['roi bounding boxes culled']++;
+        $this->stats['roi bounding boxes culled']++;
         return true;
     }
     
     
     public function renderROICullIds(array $ids): array {
         $idsInBounds=[];
-        print_r($ids);
+        
         foreach($ids as $id)
         {
-
             $cacheFilename=$this->cacheIdToFilename($id);
-            echo "cacheFilename=$cacheFilename\n";
-
+            
             $in = fopen($cacheFilename, "rb");
             if($in)
             {
@@ -261,20 +266,19 @@ class TigerlineRender extends Tigerline
                     $version = trim(fgets($in));
                     
                     $this->roi=json_decode(trim(fgets($in)),TRUE);
-                    $this->printROI();
+                    //                    $this->printROI();
                     $this->arrayToFloat($this->roi);
                     
                     $this->rois=json_decode(trim(fgets($in)),TRUE);
-                    $this->printROIs();
+                    //                  $this->printROIs();
                     $this->arrayToFloat($this->rois);
                     
                     $this->clip=json_decode(trim(fgets($in)),TRUE);
-                    $this->printClip();
+                    //                $this->printClip();
                     $this->arrayToFloat($this->clip);
-                    
                     if(
-                    !$this->boundingBoxCulled($this->roi)
-                   // && !$this->boundingBoxesCulled($this->rois)
+                    $this->boundingBoxOverlap($this->roi)
+                    // && !$this->boundingBoxesCulled($this->rois)
                     ) {
                         $idsInBounds[]=$id;
                     }
@@ -286,8 +290,6 @@ class TigerlineRender extends Tigerline
                 fclose($in);
             }
         }
-        print_r($idsInBounds);
-        
         return $idsInBounds;
     }
     
@@ -302,7 +304,7 @@ class TigerlineRender extends Tigerline
         //
         $this->clip['width']=$this->width;
         $this->clip['height']=$this->height;
-
+        
         //
         if($this->compressed)
         $im=imagecreate($this->clip['width'],$this->clip['height']);
@@ -310,9 +312,14 @@ class TigerlineRender extends Tigerline
             $im=imagecreatetruecolor($this->clip['width'],$this->clip['height']);
         if($im !== FALSE)
         {
-            $cacheIds=$this->renderROICullIds($this->getCachedShapeIDs());
+            $cacheIds=$this->getCachedShapeIDs();
+            $cacheIds=$this->renderROICullIds($cacheIds);
             
-            print_r($this->cull);
+            $this->stats['regions']=count($cacheIds);
+            $this->stats['region ids']=implode(',',$cacheIds);
+            
+            $rows=array_map( function ($a) { return [$a]; },$cacheIds);
+            $this->io->table(['Id'],$rows);
             
             $partialImageFilename=$this->boundingBoxToFilename($this->cull);
             $imageFilename=$this->getMapPath()."/{$partialImageFilename}.png";
@@ -325,15 +332,16 @@ class TigerlineRender extends Tigerline
                     
                     $tigerlineCache->cacheShape($id);
                     
-                    //                    $files=$this->getFilesForId($id);
-                    foreach($files as $file)
-                    {
-                        $cacheFilename=$this->getOutputPath()."/{$id}.txt";
-                        
-                        $this->renderImageFromCache($cacheFilename,$imageFilename);
-                    }
+                    $cacheFilename=$this->getOutputPath()."/{$id}.txt";
+                    
+                    $this->renderImageFromROICache($im,$cacheFilename,$imageFilename);
                 }
             }
+            
+            //
+            imagepng($im,$imageFilename,9);
+            imagedestroy($im);
+            $this->logger->debug(">>>> makeImage $imageFilename");
         }
         
         $this->printRenderStatistics();
@@ -342,7 +350,7 @@ class TigerlineRender extends Tigerline
     
     
     
-    private function renderImageFromCache($cacheFilename,$imageFilename)
+    private function renderImageFromROICache($im, $cacheFilename,$imageFilename)
     {
         //
         $this->logger->info("renderImageFromCache: $cacheFilename to $imageFilename");
@@ -351,8 +359,8 @@ class TigerlineRender extends Tigerline
         $in = fopen($cacheFilename, "rb");
         if($in)
         {
-            $this->renderStats['file']++;
-            $this->renderStats['cache']++;
+            $this->stats['file']++;
+            $this->stats['cache']++;
             
             try {
                 $size=filesize($cacheFilename);
@@ -367,7 +375,7 @@ class TigerlineRender extends Tigerline
                 //line 2 of cache is roi
                 $this->roi=json_decode(trim(fgets($in)),TRUE);
                 $this->arrayToFloat($this->roi);
-                $this->printROI();
+                // $this->printROI();
                 if(!$this->arrayIsFloat($this->roi)) {
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
                 }
@@ -383,8 +391,6 @@ class TigerlineRender extends Tigerline
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
                 }
                 
-                
-                
                 //
                 $select=$this->roi;
                 
@@ -399,7 +405,6 @@ class TigerlineRender extends Tigerline
                 throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip aspect is exaggerated.");
                 }
                 */
-                
                 
                 $this->clip['width']=$this->width;
                 $this->clip['height']=$this->height;
@@ -419,11 +424,9 @@ class TigerlineRender extends Tigerline
                 );
                 
                 //
-                $this->printClip();
+                //  $this->printClip();
                 
-                
-                $this->renderImageFromCache($in,$im,$imageFilename);
-                
+                $this->renderImageFromCacheInner($im,$in,$imageFilename);
                 
                 fclose($in);
             }
@@ -439,8 +442,6 @@ class TigerlineRender extends Tigerline
     
     
     
-    
-    
     private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     {
         //
@@ -450,8 +451,8 @@ class TigerlineRender extends Tigerline
         $in = fopen($cacheFilename, "rb");
         if($in)
         {
-            $this->renderStats['file']++;
-            $this->renderStats['cache']++;
+            $this->stats['file']++;
+            $this->stats['cache']++;
             
             try {
                 $size=filesize($cacheFilename);
@@ -539,7 +540,12 @@ class TigerlineRender extends Tigerline
                     $im=imagecreatetruecolor($this->clip['width'],$this->clip['height']);
                 if($im !== FALSE)
                 {
-                    $this->renderImageFromCache2($in,$im,$imageFilename);
+                    $this->renderImageFromCacheInner($im,$in,$imageFilename);
+                    
+                    //
+                    imagepng($im,$imageFilename,9);
+                    imagedestroy($im);
+                    $this->logger->debug(">>>> makeImage $imageFilename");
                 }
                 
                 fclose($in);
@@ -551,12 +557,11 @@ class TigerlineRender extends Tigerline
         }
     }
     
-    private function renderImageFromCache2($in,$im,$imageFilename)
+    private function renderImageFromCacheInner($im,$in,$imageFilename)
     {
         //
         $backgroundcolor=0xffffff;
         $color=0x000000;
-        
         
         imagefill($im, 0, 0, $backgroundcolor);
         imagesetthickness($im,1);
@@ -610,7 +615,7 @@ class TigerlineRender extends Tigerline
             //$this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$color,$this->roi,$zoom,$this->height);
             
             // draw shape
-            $this->renderStats['shape']++;
+            $this->stats['shape']++;
             
             switch($shape)
             {
@@ -631,12 +636,11 @@ class TigerlineRender extends Tigerline
             
             //3 line
             case 'L':
-                
                 if(!($count>=2)) {
                 throw \Symfony\Component\Debug\Exception\ContextErrorException("Polyline count {$count}.");
             }
             
-            $this->renderStats['polyline']++;
+            $this->stats['polyline']++;
             
             $lat1=$a[0]; $lon1=$a[0+1];
             for($i=0;$i<$count;$i+=2)
@@ -675,11 +679,6 @@ if($this->logo)
     );
 }
 
-//
-imagepng($im,$imageFilename,9);
-imagedestroy($im);
-$this->logger->debug(">>>> makeImage $imageFilename");
-//}
 }
 
 
@@ -723,11 +722,11 @@ private function renderText($im,string $text,$color,array $select)
     $w2=($select['Xmax']-$select['Xmin']);
     $fontsize = (($w2/$w1)*$this->clip['width'])*.1; //rand(3,30);
     if($fontsize<2) {
-        $this->renderStats['rejected text']++;
+        $this->stats['rejected text']++;
         return;
     }
     
-    $this->renderStats['text']++;
+    $this->stats['text']++;
     
     $rotation=0; //rand(0,360);
     
@@ -753,7 +752,7 @@ private function renderText($im,string $text,$color,array $select)
 
 private function renderShapePoint($im,float $lat,float $lon,$color)
 {
-    $this->renderStats['point']++;
+    $this->stats['point']++;
     
     $x=(int)(($lat-$this->clip['Xmin'])*$this->clip['zoom']);
     $y=(int)($this->clip['height']-($lon-$this->clip['Ymin'])*$this->clip['zoom']);
@@ -763,7 +762,7 @@ private function renderShapePoint($im,float $lat,float $lon,$color)
 
 private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, float $lon2, $color)
 {
-    $this->renderStats['box']++;
+    $this->stats['box']++;
     
     $this->renderShapeLine($im,$lat1,$lon1,$lat2,$lon1,$color);
     $this->renderShapeLine($im,$lat1,$lon2,$lat2,$lon2,$color);
@@ -773,7 +772,7 @@ private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, floa
 
 private function renderShapeLine($im, float $lat1, float $lon1, float $lat2,float $lon2, $color)
 {
-    $this->renderStats['line']++;
+    $this->stats['line']++;
     
     if($lat1<$this->clip['Xmin'] && $lat2<$this->clip['Xmin']) return;
     if($lat1>$this->clip['Xmax'] && $lat2>$this->clip['Xmax']) return;
@@ -823,7 +822,7 @@ private function renderShapeThickline($im,float $lat1,float $lon1,float $lat2,fl
 
 private function renderShapePolygon($im, array $a, $color, $fillcolor)
 {
-    $this->renderStats['polygon']++;
+    $this->stats['polygon']++;
     
     $count=count($a);
     for($i=0;$i<$count;$i+=2)
@@ -906,7 +905,7 @@ private function getColor($im,string $type,$alpha=0)
 
 private function getFillColor($im,string $type,$alpha=90)
 {
-//    echo "type=$type\n";
+    //    echo "type=$type\n";
     switch($type)
     {
         case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);

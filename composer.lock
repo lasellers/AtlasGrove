@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "829257da4847d417161297826a5ba554",
+    "content-hash": "ad0e0fc9543c22b65ac7adc59f53182e",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -2484,6 +2484,48 @@
                 "templating"
             ],
             "time": "2017-02-27T00:16:20+00:00"
+        },
+        {
+            "name": "yii2mod/yii2-ftp",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yii2mod/yii2-ftp.git",
+                "reference": "3bc4be07707f2e6eb9c9a42e5fc629c9604ec96f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yii2mod/yii2-ftp/zipball/3bc4be07707f2e6eb9c9a42e5fc629c9604ec96f",
+                "reference": "3bc4be07707f2e6eb9c9a42e5fc629c9604ec96f",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "yii2mod\\ftp\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A flexible FTP and SSL-FTP client for PHP. This lib provides helpers easy to use to manage the remote files.",
+            "keywords": [
+                "extension",
+                "file",
+                "ftp",
+                "helper",
+                "lib",
+                "server",
+                "sftp",
+                "ssl",
+                "ssl-ftp",
+                "yii2"
+            ],
+            "time": "2014-12-22T09:04:48+00:00"
         }
     ],
     "packages-dev": [

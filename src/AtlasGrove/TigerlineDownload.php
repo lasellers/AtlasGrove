@@ -56,15 +56,15 @@ class TigerlineDownload extends Tigerline
     private $dir='/geo/tiger/TIGER2007FE/';
     
     private $tigerline_subtypes=[
-['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
-['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
-['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
-['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
-//['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
-//['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
-];
-
-
+    ['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
+    ['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
+    ['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
+    ['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
+    //['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
+    //['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
+    ];
+    
+    
     // Atlasgrove\tigerlineDownload
     public function download(string $year="2007", string $state="47") {
         
@@ -77,6 +77,11 @@ class TigerlineDownload extends Tigerline
         $this->io->note("Connected to $this->host, $this->user, $this->password");
         
         $this->io->note("Getting directory...");
+        $ftp->chdir("/");
+        
+        $total = $ftp->count();
+        var_dump($total);
+        
         $list = $ftp->ScanDir();
         var_dump($list);
         
@@ -86,32 +91,36 @@ class TigerlineDownload extends Tigerline
         //   $wrapper->get($this->getDataPath().'/foofile.txt', '/folder/foofile.txt');
         
         $this->io->note("Getting directory...");
+        
+        $total = $ftp->count();
+        var_dump($total);
+        
         $list = $ftp->ScanDir();
         var_dump($list);
         
-
+        
         /*
-get year folder
-
-$states =
-
-get fe_2007_47_county.zip
-unzip here
-
-$counties= get all /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
-
-foreach($counties as $county)
-{
-Index of /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
-foreach($tigerline_subtypes as $subtype)
-{
-$zip=$ftp->get("fe_2007_36001_arealm.zip","arealm.zip");
-unzip($zip...) //here
-
-delete($zip);
-}
-}
-
+        get year folder
+        
+        $states =
+        
+        get fe_2007_47_county.zip
+        unzip here
+        
+        $counties= get all /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
+        
+        foreach($counties as $county)
+        {
+        Index of /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
+        foreach($tigerline_subtypes as $subtype)
+        {
+        $zip=$ftp->get("fe_2007_36001_arealm.zip","arealm.zip");
+        unzip($zip...) //here
+        
+        delete($zip);
+        }
+        }
+        
         */
         $ftp->close();
         

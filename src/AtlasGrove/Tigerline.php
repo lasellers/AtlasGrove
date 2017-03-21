@@ -14,10 +14,9 @@ use org\majkel\dbase\Table AS DBase;
 
 use Monolog\Monolog;
 
-
 class Tigerline
 {
-    protected $version="2.0.5";
+    protected $version="2.0.6";
     
     protected $container;
     protected $io;

@@ -2,7 +2,7 @@
 ## By Lewis Sellers (aka Min)
 ## Intrafoundation Software
 
-(Currently being Developed/Refactored)
+(NOTE: Currently being Developed/Refactored. See CLI commands.)
 
 AtlasGrove takes Tiger/Line shapefiles from the US Census Bureau and renders them into usable images.
 
