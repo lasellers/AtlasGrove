@@ -236,18 +236,15 @@ class Utils
         //}
         foreach ($finder as $dir) {
             $state_folder=$dir->getRelativePathname();
-            echo "state_folder=$state_folder\n";
             
             $a=explode('_',$state_folder);
             $statefp=$a[0];
-            echo "statefp=$statefp\n";
-            
+              
             // fe_2007_47_county.dbf
             $fileprefix="fe_{$this->yearfp}_{$statefp}_";
             $statefolder=$this->tigerline->getDataPath()."/{$state_folder}";
             
             $dbf_filename=$this->tigerline->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
-            echo "dbf_filename=$dbf_filename\n";
             
             $dbf = DBase::fromFile($dbf_filename);
             
@@ -263,19 +260,14 @@ class Utils
                     $name=$record['NAME'];
                     
                     $dbf2_filename=$this->tigerline->getDataPath()."/{$state_folder}/{$cntyidfp}_{$name}/fe_{$this->yearfp}_{$cntyidfp}_{$subtype}.dbf";
-                    echo "dbf2_filename=$dbf2_filename\n";
-                    
+                     
                     if(file_exists($dbf2_filename))
                     {
                         try {
                             $dbf2 = DBase::fromFile($dbf2_filename);
-                            echo " records: ".count($dbf2)."\n";
                             
                             $records=[];
                             foreach ($dbf2 as $record2) {
-                                //                        echo "  size: ".count($record2)."\n";
-                                // echo "*";
-                                // print_r($record2->getArrayCopy());
                                 $records[]=($record2->getArrayCopy());
                                 
                             }
@@ -287,7 +279,7 @@ class Utils
                         }
                         catch (RuntimeException $e)
                         {
-                            echo $e->getMessage();
+                            $this->io->error($e->getMessage());
                             //
                         }
                     }
@@ -342,8 +334,7 @@ class Utils
             $statefolder=$this->tigerline->getDataPath()."/{$state_folder}";
             
             $dbf_filename=$this->tigerline->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
-            echo "dbf_filename=$dbf_filename\n";
-            
+           
             $dbf = DBase::fromFile($dbf_filename);
             
             foreach ($dbf as $record) {
@@ -358,7 +349,6 @@ class Utils
                     $name=$record['NAME'];
                     
                     $shx_filename=$this->tigerline->getDataPath()."/{$state_folder}/{$cntyidfp}_{$name}/fe_{$this->yearfp}_{$cntyidfp}_{$subtype}.shx";
-                    echo "shx_filename=$shx_filename\n";
                     
                     $shx=$this->tigerline->getShx($shx_filename);
                     //  list($header,$index)=$tigerline->get_shx($shx_filename);
@@ -412,18 +402,15 @@ class Utils
         //}
         foreach ($finder as $dir) {
             $state_folder=$dir->getRelativePathname();
-            echo "state_folder=$state_folder\n";
             
             $a=explode('_',$state_folder);
             $statefp=$a[0];
-            echo "statefp=$statefp\n";
             
             // fe_2007_47_county.dbf
             $fileprefix="fe_{$this->yearfp}_{$statefp}_";
             $statefolder=$this->tigerline->getDataPath()."/{$state_folder}";
             
             $dbf_filename=$this->tigerline->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
-            echo "dbf_filename=$dbf_filename\n";
             
             $dbf = DBase::fromFile($dbf_filename);
             
@@ -440,7 +427,6 @@ class Utils
                     $name=$record['NAME'];
                     
                     $shp_filename=$this->tigerline->getDataPath()."/{$state_folder}/{$cntyidfp}_{$name}/fe_{$this->yearfp}_{$cntyidfp}_{$subtype}.shp";
-                    echo "shp_filename=$shp_filename\n";
                     
                     $shp=$this->tigerline->get_shapefile($shp_filename);
                     //  list($header,$index)=$tigerline->get_shx($shx_filename);
@@ -505,7 +491,6 @@ class Utils
         
         //  $records=[];
         
-        
         // get list of county folders
         //////  if($filter=="") {
         $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->tigerline->getDataPath());
@@ -515,18 +500,15 @@ class Utils
         //}
         foreach ($finder as $dir) {
             $state_folder=$dir->getRelativePathname();
-            echo "state_folder=$state_folder\n";
             
             $a=explode('_',$state_folder);
             $statefp=$a[0];
-            echo "statefp=$statefp\n";
             
             // fe_2007_47_county.dbf
             $fileprefix="fe_{$this->yearfp}_{$statefp}_";
             $statefolder=$this->tigerline->getDataPath()."/{$state_folder}";
             
             $dbf_filename=$this->tigerline->getOutputPath()."/{$state_folder}/{$this->yearfp}_{$statefp}_county.txt";
-            echo "dbf_filename=$dbf_filename\n";
             
             $dbf = DBase::fromFile($dbf_filename);
             
@@ -543,7 +525,6 @@ class Utils
                     $name=$record['NAME'];
                     
                     $shp_filename=$this->tigerline->getDataPath()."/{$state_folder}/{$cntyidfp}_{$name}/fe_{$this->yearfp}_{$cntyidfp}_{$subtype}.shp";
-                    echo "shp_filename=$shp_filename\n";
                     
                     $shp=$this->tigerline->get_shapefile($shp_filename);
                     //  list($header,$index)=$tigerline->get_shx($shx_filename);
@@ -652,22 +633,3 @@ return  [
 
 }
 
-
-/*
-roi
-
-etn
-width=6000
-
-$clip['Xmin']=-85-.5+.2+.1;
-$clip['Xmax']=-81-.5-.2;
-$clip['Ymin']=34.982924+.4;
-$clip['Ymax']=36.678118+.4;
-
-lod0
-width=4000
-$clip['Xmin']=-85-.5+.2+.1;
-$clip['Xmax']=-81-.5-.2;
-$clip['Ymin']=34.982924;
-$clip['Ymax']=36.678118+.3;
-*/

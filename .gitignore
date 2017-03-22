@@ -14,6 +14,7 @@
 !var/SymfonyRequirements.php
 /vendor/
 /var/cache/data
+/var/cache/data.cache
 /var/cache/output
 /web/map/*.png
 .vscode

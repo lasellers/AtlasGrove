@@ -32,12 +32,13 @@ class RenderCommand extends ContainerAwareCommand
         $this->addOption('1080p',null, InputOption::VALUE_NONE, 'If set, uses 1080p');
         $this->addOption('4k',null, InputOption::VALUE_NONE, 'If set, uses 4k');
         $this->addOption('8k',null, InputOption::VALUE_NONE, 'If set, uses 8k');
+        $this->addOption('16k',null, InputOption::VALUE_NONE, 'If set, uses 16k');
         
         $this->addOption('aspect',null, InputOption::VALUE_REQUIRED, 'If set, uses None,Width,Height');
         $this->addOption('lod',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         $this->addOption('region',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         $this->addOption('roi',null,InputOption::VALUE_REQUIRED,'If set, uses ROI:x1,y1,x2,y2');
-        $this->addOption('tiles',null,InputOption::VALUE_REQUIRED,'If set, uses tiles:x1,y1,x2,y2');
+        $this->addOption('test',null,InputOption::VALUE_REQUIRED,'If set, ...');
         
         $this->addOption('all',null, InputOption::VALUE_NONE, 'If set, ...');
         $this->addOption('states',null,InputOption::VALUE_NONE,'If set, uses states');
@@ -59,6 +60,7 @@ class RenderCommand extends ContainerAwareCommand
         $id = $input->getArgument('id')?:"";
         
         $force = $input->getOption('force',false)?true:false;
+        $io->note('Force '.($force?"YES":"NO"));
         
         $width = $input->getOption('width');
         if($width>0) {
@@ -82,6 +84,10 @@ class RenderCommand extends ContainerAwareCommand
             $render->setHeight(4320);
             $render->setWidth(7680);
         }
+        /* else if($input->getOption('16k')) {
+        $render->setHeight(4320*2);
+        $render->setWidth(7680*2);
+        }*/
         
         $aspect = $input->getOption('aspect');
         if(strlen($aspect)>0) {
@@ -101,18 +107,86 @@ class RenderCommand extends ContainerAwareCommand
         $roi = $input->getOption('roi');
         if(strlen($roi)>0) {
             $a=explode(",",$roi);
-            $xmin=$a[0];
-            $ymin=$a[1];
-            $xmax=$a[2];
-            $ymax=$a[3];
-            print_r($a);
             $records=$render->renderROI([
-            'Xmin'=> $xmin,
-            'Ymin'=> $ymin,
-            'Xmax'=> $xmax,
-            'Ymax'=> $ymax
+            'Xmin'=> $a[0],
+            'Ymin'=> $a[1],
+            'Xmax'=> $a[2],
+            'Ymax'=> $a[3]
             ]);
         }
+        
+        
+        $test = $input->getOption('test');
+        if(strlen($test)>0) {
+            
+            switch($test) {
+                case "all":
+                    $records=$render->renderROI([
+                    'Xmin'=> -130,
+                    'Ymin'=> 20,
+                    'Xmax'=>-70,
+                    'Ymax'=> 50
+                    ]);
+                    break;
+                
+                case "us":
+                    $records=$render->renderROI([
+                    'Xmin'=> -130,
+                    'Ymin'=> 20,
+                    'Xmax'=>-70,
+                    'Ymax'=> 50
+                    ]);
+                    break;
+                
+                case "etn":
+                    $records=$render->renderROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924+.4,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.4
+                    ]);
+                    break;
+                
+                case "tn":
+                    $records=$render->renderROI([
+                    'Xmin'=> -90.31029799999999,
+                    'Ymin'=> -81.6469,
+                    'Xmax'=>-81.6469,
+                    'Ymax'=> 36.678118
+                    ]);
+                    break;
+                
+                case "lod0":
+                    $records=$render->renderROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.3
+                    ]);
+                    break;
+                
+                case "narrow":
+                    $records=$render->renderROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924+.4,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.4
+                    ]);
+                    break;
+                
+                case "blank":
+                    $records=$render->renderROI([
+                    'Xmin'=> -100,
+                    'Ymin'=> 60,
+                    'Xmax'=>-100,
+                    'Ymax'=> 60
+                    ]);
+                    break;
+                
+                default:
+            }
+        }
+        
         
         if($input->getOption('states',false)||$input->getOption('all',false)) {
             $io->title('Render States Shapes');

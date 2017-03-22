@@ -28,7 +28,7 @@ class Tigerline
     protected $rootDataDir="";
     protected $dataDir="";
     protected $rootDir="";
-    protected $outputDir="";
+    protected $dataCacheDir="";
     protected $webDir="";
     protected $mapDir="";
     
@@ -43,7 +43,7 @@ class Tigerline
     protected $height=480;
     
     //
-   // protected $cull;
+    // protected $cull;
     
     /**
     */
@@ -61,23 +61,23 @@ class Tigerline
         $this->rootDataDir=dirname($container->get('kernel')->getCacheDir())."/data";
         $this->rootDir=($container->get('kernel')->getRootDir());
         
-        $this->outputDir=dirname($container->get('kernel')->getCacheDir())."/output";
-        //        $this->outputDir=$container->getParameter('output_dir');
-        if(!file_exists($this->outputDir))
+        $this->dataCacheDir=dirname($container->get('kernel')->getCacheDir())."/data.cache";
+        //        $this->dataCacheDir=$container->getParameter('output_dir');
+        if(!file_exists($this->getDataCachePath()))
         {
-            mkdir($this->outputDir);
+            mkdir($this->getDataCachePath());
         }
         
         $this->webDir=$container->getParameter('web_dir');
-        if(!file_exists($this->webDir))
+        if(!file_exists($this->getWebPath()))
         {
-            mkdir($this->webDir);
+            mkdir($this->getWebPath());
         }
         
         $this->mapDir=$container->getParameter('map_dir');
-        if(!file_exists($this->mapDir))
+        if(!file_exists($this->getMapPath()))
         {
-            mkdir($this->mapDir);
+            mkdir($this->getMapPath());
         }
         
         $this->yearfp=$this->getMostRecentCachedTigerlineYear();
@@ -97,7 +97,6 @@ class Tigerline
         return $rows;
     }
     
-
     
     public function getRootDataPath(): string
     {
@@ -111,16 +110,16 @@ class Tigerline
     {
         return $this->rootDir;
     }
-    public function getOutputPath(): string
+    public function getDataCachePath(): string
     {
-        return $this->outputDir;
+        return $this->dataCacheDir;
     }
-
+    
     public function cacheIdToFilename(int $id): string
     {
-      return $this->getOutputPath()."/{$id}.txt";
+        return $this->getDataCachePath()."/{$id}.txt";
     }
-
+    
     public function getWebPath(): string
     {
         return $this->webDir;
@@ -199,7 +198,7 @@ class Tigerline
         return $array; //todo
         
     }
-    protected function printArray(array $array, string $name)
+    protected function printArray(array $array, string $name="")
     {
         $this->io->table(
         array_merge([$name],array_keys($array)),
@@ -273,28 +272,26 @@ class Tigerline
     
     
     // *****************************************************************************
-
-
-
+    
+    
+    
     /*
     
     protected function in_minres(array $mfha): bool
     {
-        if(!isset($this->cull)) return false;
-        
-        // $this->printMFHAResolution($mfha);
-        
-        if($this->minimumResolution($mfha))
-        {
-            $this->cacheStats['files_minres_culled']++;
-            return true;
-        }
-        return false;
+    if(!isset($this->cull)) return false;
+    
+    // $this->printMFHAResolution($mfha);
+    
+    if($this->minimumResolution($mfha))
+    {
+    $this->cacheStats['files_minres_culled']++;
+    return true;
+    }
+    return false;
     }
     */
     // *****************************************************************************
-    
-    
     
     protected function printMFHAResolution($mfha)
     {
@@ -303,70 +300,7 @@ class Tigerline
         $this->io->note(" Resolution: $w , $h");
     }
     
-    
-    
-    
-    
-
-
-
-// *****************************************************************************
-public function getShx($filename): array
-{
-    try {
-        $mfha=null;
-        $shx=[];
-        
-        $this->cacheStats['shx']++;
-        $size=filesize($filename);
-        // $this->logger->debug("SHX::: $filename ($size bytes)");
-        
-        $handle = @fopen($filename, "r");
-        if($handle !== FALSE) {
-            $binarydata = @fread($handle, 100);
-            
-            //main field header
-            $mfha = unpack(
-            "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
-            $binarydata);
-            //  print_shapefile_contents_mainheader($mfha);
-            // printMFHAResolution($mfha);
-            
-            $count=0;
-            $pos=ftell($handle);
-            while(!feof($handle) && ($pos+8)<$size)
-            {
-                $binarydata = fread($handle, 8);
-                $pos=ftell($handle);
-                $rh = unpack("NOffset/NContentLength",$binarydata);
-                $this->cacheStats['shxrecords']++;
-                
-                $shx[]=array($rh['Offset'],$rh['ContentLength']);
-                
-                //   $this->logger->debug("+++ [".ftell($handle)."] Offset: ".$rh['Offset']."w ContentLength: ".$rh['ContentLength']."w");
-                
-                //
-                fseek($handle,$pos + $rh['ContentLength']*2,SEEK_SET);
-                $pos=ftell($handle);
-                
-                $count++;
-            }
-            
-            $this->logger->debug("SHX>>> $count index count");
-            
-            fclose($handle);
-        }
-        
-        return array('header'=>$mfha,'index'=>$shx);
-    }
-    catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
-    {
-        return ['header'=>[],'index'=>[]];
-    }
 }
-
-}
-
 /*
 Shapes
 L Line P polygon * point

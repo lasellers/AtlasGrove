@@ -16,75 +16,57 @@ use Monolog\Monolog;
 
 class TigerlineCache extends Tigerline
 {
-    
     protected $out;
     protected $opt;
-    
-    
     
     public function __construct($container,SymfonyStyle $io)
     {
         parent::__construct($container,$io);
         
-        // $this->logger->debug(" dw=$dw dh=$dh");
-        
-        //
-        // $this->clip=null;
-        //$this->roi=null;
-        
-        $this->opt['precision']=0;
-        
-        $this->resetstats();
+        $this->resetStats();
     }
-    
     
     private $stats;
-    public function resetstats()
+    public function resetStats()
     {
         //
-        $this->stats['shx']=0;
-        $this->stats['shxrecords']=0;
-        $this->stats['shapes']=0;
-        $this->stats['records']=0;
-        $this->stats['points']=0;
-        $this->stats['points_roi_culled']=0;
-        $this->stats['records_minres_culled']=0;
         $this->stats['files']=0;
-        $this->stats['files_minres_culled']=0;
+        $this->stats['dbf files']=0;
+        $this->stats['shx files']=0;
+        $this->stats['shp files']=0;
+        $this->stats['shapes']=0;
+        
+        $this->stats['point']=0;
+        $this->stats['polyline']=0;
+        $this->stats['polygon']=0;
+        
+        $this->stats['points']=0;
         $this->stats['points out']=0;
-        $this->stats['arealm_count']=0;
-        $this->stats['pointlm_count']=0;
-        $this->stats['areawater_count']=0;
-        $this->stats['edges_count']=0;
-        $this->stats['county_count']=0;
-        $this->stats['place_count']=0;
-        $this->stats['dbf']=0;
-        $this->stats['shx']=0;
-        $this->stats['shp']=0;
-        $this->stats['dbfrecords']=0;
-        $this->stats['shxrecords']=0;
-        $this->stats['shprecords']=0;
-    }
-    
-    // *****************************************************************************
-    protected function printCacheStatisticsTotal()
-    {
-        $this->io->section("Total Cache Statistics");
-        $this->io->table(
-        ['Name','Count'],
-        [
-        ["Area Landmarks",$this->stats['arealm_count']],
-        ["Point Landmarks",$this->stats['pointlm_count']],
-        ["Area Water",$this->stats['areawater_count']],
-        ["Edges",$this->stats['edges_count']],
-        ["County",$this->stats['county_count']],
-        ["Places",$this->stats['place_count']]
-        ]
-        );
+        $this->stats['points roi culled']=0;
+        $this->stats['minimum-resolution record cull']=0;
+        $this->stats['minimum-resolution file cull']=0;
+        
+        $this->stats['arealm count']=0;
+        $this->stats['pointlm count']=0;
+        $this->stats['areawater count']=0;
+        $this->stats['edges count']=0;
+        
+        $this->stats['arealm files']=0;
+        $this->stats['pointlm files']=0;
+        $this->stats['areawater files']=0;
+        $this->stats['edges files']=0;
+        
+        $this->stats['county records']=0;
+        $this->stats['place records']=0;
+        
+        $this->stats['records']=0;
+        $this->stats['dbf records']=0;
+        $this->stats['shx records']=0;
+        $this->stats['shp records']=0;
     }
     
     
-    protected function printCacheStatistics()
+    protected function printStatistics()
     {
         $this->io->section('Cache Statistics');
         
@@ -94,22 +76,22 @@ class TigerlineCache extends Tigerline
         $data[]=["Files",$this->stats['files'],""];
         
         try {
-            $result=(100*($this->stats['files_minres_culled']/$this->stats['files']));
+            $result=(100*($this->stats['minimum-resolution file cull']/$this->stats['files']));
         } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
         {
             $result=0;
         }
-        $data[]=["Files minres Culled",$this->stats['files_minres_culled'],"%$result"];
+        $data[]=["Files minres Culled",$this->stats['minimum-resolution file cull'],"%$result"];
         
         $data[]=["Records",$this->stats['records'],""];
         
         try {
-            $result = (100*($this->stats['records_minres_culled']/$this->stats['records']));
+            $result = (100*($this->stats['minimum-resolution record cull']/$this->stats['records']));
         } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
         {
             $result=0;
         }
-        $data[]=["Records minres Culled",$this->stats['records_minres_culled'],"%$result"];
+        $data[]=["Records minres Culled",$this->stats['minimum-resolution record cull'],"%$result"];
         
         $data[]=["Shapes",$this->stats['shapes'],""];
         
@@ -122,35 +104,60 @@ class TigerlineCache extends Tigerline
         $data[]=["Points: (in)",$this->stats['points']." (out) ".$this->stats['points out'],"%$result"];
         
         try {
-            $result=(100*($this->stats['points_roi_culled']/$this->stats['points']));
+            $result=(100*($this->stats['points roi culled']/$this->stats['points']));
         } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
         {
             $result=0;
         }
-        $data[]=["Points ROI Culled",$this->stats['points_roi_culled'],"%$result"];
+        $data[]=["Points ROI Culled",$this->stats['points roi culled'],"%$result"];
         
         $this->io->table($header,$data);
+        
+        //
+        $this->io->section("Total Cache Statistics");
+        $this->io->table(
+        ['Name','Count'],
+        $this->arrayToNameValue($this->stats)
+        );
     }
     
+    private function getCachePrecision()
+    {
+        return $this->container->getParameter('cache_precision');
+    }
+    public function setCachePrecision(int $number=0)
+    {
+        return $this->container->getParameter('cache_precision',$number);
+    }
     
-    // *****************************************************************************
+    private function getCacheNoDups()
+    {
+        return $this->container->getParameter('cache_nodups');
+    }
+    public function setCacheNoDups(int $number=0)
+    {
+        return $this->container->getParameter('cache_nodups',$number);
+    }
+    
+    //
     protected function clipPrecision(float $number): float
     {
-        if($this->opt['precision']>0) {
-            return sprintf("%4.".$this->opt['precision']."f",$number);
+        $precision=$this->getCachePrecision();
+        if($precision>0) {
+            return sprintf("%4.".$precision."f",$number);
         }
         return $number;
     }
     
     protected function setShapePoly(float $lat=0,float $lon=0,string $shape='')
     {
-        $this->lastlat=$lat;
-        $this->lastlon=$lon;
-        $this->lastshape=$shape;
+        $this->lastLat=$lat;
+        $this->lastLon=$lon;
+        $this->lastShape=$shape;
     }
     
     
-    // *****************************************************************************
+    //
     private function correctTextAbbreviations(string $text): string
     {
         $abbr=array(
@@ -194,20 +201,45 @@ class TigerlineCache extends Tigerline
         }
         return implode(' ',$a);
     }
-    // *****************************************************************************
+    //
     
-    
-    private $minRes=0.00001;
-    protected function minimumResolution(array $roi): bool
+    protected function minimumResolutionCull(array $roi): bool
     {
-        $w=abs($roi['Xmax']-$roi['Xmin']);
-        $h=abs($roi['Ymax']-$roi['Ymin']);
-return false;
-//todo
-// $w/$this->width
-        if($w<$this->minRes && $h<$this->minRes) {
+        return false;
+        
+        $minRes=0.00001;
+        
+        if(!is_array($this->clip)) {
+            return false;
+        }
+        //$this->printArray($roi); $this->printClip();
+        
+        $rw=abs($roi['Xmax']-$roi['Xmin']);
+        $rh=abs($roi['Ymax']-$roi['Ymin']);
+        // echo "rw rh =  :$rw $rh = \n";
+        
+        if($rw==0 || $rh==0) {
             return true;
         }
+        
+        $dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
+        $dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
+        
+        //  echo "dw/dh =  :$dw $dh = \n";
+        
+        if($dw==0 || $dh==0) {
+            return true;
+        }
+        
+        $w=$rw/$dw;
+        $h=$rh/$dh;
+        // echo "rw/dw =  :".($w)." = \n";
+        //echo "rh/dh =  : ".($h)." = \n";
+        
+        if( ($w < $minRes) && ($h < $minRes)) {
+            return true;
+        }
+        
         return false;
     }
     
@@ -221,7 +253,6 @@ return false;
             $this->cacheShape($id,$force);
         }
         
-        $this->printCacheStatisticsTotal();
     }
     
     
@@ -272,7 +303,6 @@ return false;
             $this->io->note("Wrote $cacheFilename.");
         }
         
-        
         // rewrite lines 3 and 4
         $lines=explode("\n",file_get_contents($cacheFilename));
         $lines[2]=json_encode($this->rois);
@@ -281,304 +311,283 @@ return false;
         $this->io->note("Rewrote $cacheFilename.");
         
         //
-        $this->printCacheStatistics();
+        $this->printStatistics();
         return false;
     }
     
     
     //
-    protected function cacheShapefileContents(
-    string $dbfFilename,
-    string $cacheFilename,
-    string $shpFilename,
-    string $type, //A M W E
-    string $namefield="FULLNAME"
-    )
+    protected function cacheShapefileContents(string $dbfFilename,string $cacheFilename,string $shpFilename,string $type, string $namefield="FULLNAME")
     {
-        $dbfRecords = DBase::fromFile($dbfFilename);
-        
-        foreach ($dbfRecords as $record)
-        {
-            $fields=array_keys($record->getArrayCopy());
-            break;
-    }
-    
-    $record_numbers = count($dbfRecords);
-    
-    //
-    $size=filesize($shpFilename);
-    //$this->io->note("SHP $shpFilename ($size bytes)");
-    
-    
-    $shpHandle = fopen($shpFilename, "rb");
-    if($shpHandle !== FALSE)
-    {
+        $dbf_records = DBase::fromFile($dbfFilename);
+        $this->stats['dbf files']++;
+        $this->stats['dbf records']+=count($dbf_records);
         $this->stats['files']++;
-        $binarydata = fread($shpHandle, 100);
         
-        //main field header
-        $mfha = unpack(
-        "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
-        $binarydata);
-        $this->printMFHAResolution($mfha);
+        $record=each($dbf_records);
+        $fields=array_keys($record);
         
-        //if(!isset($this->roi))
-        //{
-        $this->roi['Xmin']=$mfha['Xmin'];
-        $this->roi['Xmax']=$mfha['Xmax'];
-        $this->roi['Ymin']=$mfha['Ymin'];
-        $this->roi['Ymax']=$mfha['Ymax'];
+        //foreach ($dbf_records as $record)
+        // {
+        //   $fields=array_keys($record->getArrayCopy());
+        //   break;
         // }
-        $this->rois[]=$this->roi;
+        
+        $record_numbers = count($dbf_records);
         
         //
-        if($this->minimumResolution($this->roi)) {
-            $this->stats['files_minres_culled']++;
+        $size=filesize($shpFilename);
+        
+        $shpHandle = fopen($shpFilename, "rb");
+        if($shpHandle !== FALSE)
+        {
+            $this->stats['shp files']++;
+            $this->stats['files']++;
+            
+            $binarydata = fread($shpHandle, 100);
+            
+            //main field header
+            $mfha = unpack(
+            "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
+            $binarydata);
+            $this->printMFHAResolution($mfha);
+            
+            //if(!isset($this->roi))
+            //{
+            $this->roi['Xmin']=$mfha['Xmin'];
+            $this->roi['Xmax']=$mfha['Xmax'];
+            $this->roi['Ymin']=$mfha['Ymin'];
+            $this->roi['Ymax']=$mfha['Ymax'];
+            // }
+            $this->rois[]=$this->roi;
+            
+            //
+            if($this->minimumResolutionCull($this->roi)) {
+                $this->stats['minimum-resolution file cull']++;
+            }
+            else
+            {
+                //
+                $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
+                $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
+                
+                if(ftell($this->out)==0)
+                {
+                    //line 1
+                    fputs($this->out,$this->version."\r\n");
+                    
+                    //line 2
+                    fputs($this->out,json_encode($this->roi)."\r\n");
+                    
+                    // line 3
+                    fputs($this->out,"# placeholding for ROIs\r\n");
+                        
+                    //line 3 (initial values)
+                    $this->clip=$this->computeRegionMids($this->roi);
+                    
+                    fputs($this->out,"# placeholding for Clip");
+                    }
+                
+                //
+                $this->setShapePoly();
+                
+                //
+                $count=0;
+                $pos=ftell($shpHandle);
+                while(!feof($shpHandle) && ($pos+8)<$size)
+                {
+                    $this->stats['shp records']++;
+                    $this->stats['records']++;
+                    
+                    //
+                    $row = $dbf_records[$count];
+                    
+                    $text=$row[$namefield];
+                    
+                    //
+                    $binarydata = fread($shpHandle, 8);
+                    $pos=ftell($shpHandle);
+                    $rh = unpack("NRecordNumber/NContentLength",$binarydata);
+                    
+                    //
+                    $binarydata = fread($shpHandle, 4);
+                    $rc = unpack("IShapeType",$binarydata);
+                    
+                    //
+                    if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
+                    $type2='i';
+                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
+                    $type2='h';
+                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
+                    $type2='p';
+                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
+                    $type2='r';
+                    else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
+                    $type2='t';
+                    else
+                        $type2=$type;
+                    
+                    switch($rc['ShapeType'])
+                    {
+                        case 1:
+                            $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
+                            break;
+                        case 3:
+                            $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
+                            break;
+                        case 5:
+                            $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
+                            break;
+                        default:
+                            $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
+                    }
+                    
+                    //
+                    fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
+                    $pos=ftell($shpHandle);
+                    
+                    $count++;
+                }
+                
+            }
+            
+            fclose($shpHandle);
+        }
+        //  $this->clip=$this->computeRegionMids($this->clip);
+    }
+    
+    
+    //
+    protected function cacheShapefileTypePoint($handle,string $type,int $length=0,string $text='')
+    {
+        $this->stats['point']++;
+        
+        $binarydata = fread($handle, 16);
+        $point = unpack("dX/dY",$binarydata);
+        
+        $this->cacheOutPoint($point['X'],$point['Y'],$type,$text);
+        $this->stats['points']++;
+    }
+    
+    
+    //
+    protected function cacheShapefileTypePolyline($handle,string $type,int $length=0,string $text='')
+    {
+        $this->stats['polyline']++;
+        
+        $binarydata = fread($handle, 40);
+        $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
+        
+        //printMFHAResolution($h);
+        if($this->minimumResolutionCull($h))
+        {
+            $this->stats['minimum-resolution record cull']++;
+            return;
+        }
+        
+        $pos=ftell($handle);
+        
+        $numParts=$h['numParts'];
+        $numPoints=$h['numPoints'];
+        
+        //
+        $offset=[];
+        $part=0;
+        while(($part+1)<=$numParts)
+        {
+            $binarydata = fread($handle, 4);
+            if(feof($handle))
+            { break; }
+        
+        $d = unpack("VStart",$binarydata);
+        
+        $offset[$part]=$d['Start'];
+        $part++;
+    }
+    
+    //
+    $pointsPerPart=[];
+    if($numParts==1) {
+        $pointsPerPart[0]=$numPoints;
+    } else
+    {
+        $part=0;
+        $points=0;
+        foreach($offset as $p=>$o)
+        {
+            if(($part+1)<$numParts)
+            { $count=$offset[$part+1]-$offset[$part]; }
+            else
+            { $count=$numPoints-$points; }
+            $points+=$count;
+            $pointsPerPart[$part]=$count;
+            
+            $part++;
+        }
+    }
+    
+    //
+    $part=0;
+    foreach($offset as $key=>$startPoint)
+    {
+        $partPoints=$pointsPerPart[$part];
+        
+        $pointOffset=$pos+($numParts*4)+($startPoint*16);
+        fseek($handle,$pointOffset);
+        
+        $points=0;
+        $first['X']=0;
+        $first['Y']=0;
+        do
+        {
+            $binarydata = fread($handle, 16);
+            if(feof($handle)) { break; }
+        
+        $point = unpack("dX/dY",$binarydata);
+        $this->stats['points']++;
+        
+        if($points==0)
+        {
+            $first['X']=$point['X']; $first['Y']=$point['Y'];
+            $this->cacheOutPolylineStart($point['X'],$point['Y'],$type,$text);
         }
         else
         {
-            //
-            $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
-            $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
-            
-            if(ftell($this->out)==0)
-            {
-                //line 1
-                fputs($this->out,$this->version."\r\n");
-                
-                //line 2
-                fputs($this->out,json_encode($this->roi)."\r\n");
-                
-                // line 3
-                fputs($this->out,"#placeholding for ROIs\r\n");
-                    
-                //line 3 (initial values)
-                $this->clip=$this->roi;
-                $this->clip=$this->computeRegionMids($this->clip);
-                //  fputs($this->out,$this->clip['Xmin'].','.$this->clip['Ymin'].','.$this->clip['Xmax'].','.$this->clip['Ymax'].','.$this->clip['Xmid'].','.$this->clip['Ymid']);
-                fputs($this->out,"#placeholding for Clip");
-                }
-            
-            //
-            $this->setShapePoly();
-            
-            //
-            $count=0;
-            $pos=ftell($shpHandle);
-            while(!feof($shpHandle) && ($pos+8)<$size)
-            {
-                //
-                $row = $dbfRecords[$count];
-                
-                $text=$row[$namefield];
-                
-                //
-                $binarydata = fread($shpHandle, 8);
-                $pos=ftell($shpHandle);
-                $rh = unpack("NRecordNumber/NContentLength",$binarydata);
-                $this->stats['records']++;
-                
-                //
-                $binarydata = fread($shpHandle, 4);
-                $rc = unpack("IShapeType",$binarydata);
-                
-                //      if(is_road($text))
-                if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
-                $type2='i';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
-                $type2='h';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
-                $type2='p';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
-                $type2='r';
-                else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
-                $type2='t';
-                else
-                    $type2=$type;
-                
-                switch($rc['ShapeType'])
-                {
-                    case 1:
-                        $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    case 3:
-                        $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    case 5:
-                        $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    default:
-                        $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
-                }
-                
-                //
-                fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
-                $pos=ftell($shpHandle);
-                
-                $count++;
-            }
-            
+            $this->cacheOutPolyline($point['X'],$point['Y']);
         }
         
-        fclose($shpHandle);
-    }
-    //  $this->clip=$this->computeRegionMids($this->clip);
-}
-
-
-// *****************************************************************************
-protected function cacheShapefileTypePoint($handle,string $type,int $length=0,string $text='')
-{ //16
-    $binarydata = fread($handle, 16);
-    $point = unpack("dX/dY",$binarydata);
+        $points++;
+    } while(
+    $points<$numPoints &&
+    $points<$partPoints
+    );
     
-    $this->stats['points']++;
-    //if(in_roi($point))
-    //  {
-    //  if(VERBOSE>=3)
-    //   $this->io->note("(".ftell($handle).") point: x=".$point['X'].",\ty=".$point['Y']);
-    $this->cacheOutPoint($point['X'],$point['Y'],$type,$text);
-    // }
-}
-
-
-// *****************************************************************************
-protected function cacheShapefileTypePolyline($handle,string $type,int $length=0,string $text='')
-{
-    $binarydata = fread($handle, 40);
-    $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
-    // if(VERBOSE>=2)
-    //{
-    // $this->io->note('polyline: Xmin='.$h['Xmin'].',Ymin='.$h['Ymin'].' Xmax='.$h['Xmax'].',Ymax='.$h['Ymax'].'numParts='.$h['numParts'].' numPoints='.$h['numPoints']);
-    //  if($h['numPoints']<10) $this->io->note('###L');
-    // }
-    
-    //printMFHAResolution($h);
-    if($this->minimumResolution($h))
-    {
-        $this->stats['records_minres_culled']++;
-        return;
-    }
-    
-    $pos=ftell($handle);
-    //$this->io->note("pos=$pos");
-    $numParts=$h['numParts'];
-    $numPoints=$h['numPoints'];
-    //$this->io->note("numParts $numParts numPoints=$numPoints");
-    
-    //
-    $offset=[];
-    $part=0;
-    while(($part+1)<=$numParts)
-    {
-        $binarydata = fread($handle, 4);
-        if(feof($handle)) break;
-    
-    $d = unpack("VStart",$binarydata);
-    
-    //    if(VERBOSE>=2)
-    //{
-    //    $hs = unpack("H4hex",$binarydata);
-    //$this->io->note(" > part=$part < $numParts vstart ".$d['Start']." : parts[$part] offset: ".$offset[$part]." 0x".$hs['hex']);
-    // }
-    
-    $offset[$part]=$d['Start'];
     $part++;
+    if($part>$numParts) break;
 }
+}
+
+
 
 //
-$pointsPerPart=[];
-if($numParts==1) {
-    $pointsPerPart[0]=$numPoints;
-} else
-{
-    $part=0;
-    $points=0;
-    foreach($offset as $p=>$o)
-    {
-        if(($part+1)<$numParts)
-        { $count=$offset[$part+1]-$offset[$part]; }
-        else
-        { $count=$numPoints-$points; }
-        $points+=$count;
-        $pointsPerPart[$part]=$count;
-        //$this->io->note(" < offset[$part] count: $count offset:".$offset[$part]." points:".$pointsPerPart[$part]);
-        $part++;
-    }
-}
-
-//
-$part=0;
-foreach($offset as $key=>$startpoint)
-{
-    $partpoints=$pointsPerPart[$part];
-    
-    $pointoffset=$pos+($numParts*4)+($startpoint*16);
-    fseek($handle,$pointoffset);
-    //if(VERBOSE>=2)
-    //$this->io->note(" >> parts[$part] : startpoint: $startpoint key: $key offset: $pointoffset ($partpoints part points)");
-    
-    $points=0;
-    $first['X']=0;
-    $first['Y']=0;
-    do
-    {
-        $binarydata = fread($handle, 16);
-        if(feof($handle)) { break; }
-    
-    $point = unpack("dX/dY",$binarydata);
-    $this->stats['points']++;
-    
-    if($points==0)
-    {
-        $first['X']=$point['X']; $first['Y']=$point['Y'];
-        $this->cacheOutPolylineStart($point['X'],$point['Y'],$type,$text);
-    }
-    else
-    {
-        $this->cacheOutPolyline($point['X'],$point['Y']);
-    }
-    
-    //if(VERBOSE>=2)
-    ////////// $this->io->note("(".ftell($handle).") [".$points."] polyline: point: X=".$point['X'].",\tY=".$point['Y']);
-    
-    $points++;
-} while(
-$points<$numPoints &&
-$points<$partpoints
-);
-
-$part++;
-if($part>$numParts) break;
-}
-}
-
-
-
-// *****************************************************************************
 protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,string $text='')
 {
+    $this->stats['polygon']++;
+    
     $binarydata = fread($handle, 40);
     $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
     
-    //if(VERBOSE>=2)
-    //{
-    //$this->io->note('('.ftell($handle).') polygon: Xmin='.$h['Xmin'].',Ymin='.$h['Ymin'].' Xmax='.$h['Xmax'].',Ymax='.$h['Ymax'].'numParts='.$h['numParts'].' numPoints='.$h['numPoints'].'');
-    //if($h['numPoints']<10) $this->io->note('###P');
-    //}
-    
     //printMFHAResolution($h);
-    if($this->minimumResolution($h))
+    if($this->minimumResolutionCull($h))
     {
-        $this->stats['records_minres_culled']++;
+        $this->stats['minimum-resolution record cull']++;
         return;
     }
     
     $pos=ftell($handle);
-    //$this->io->note("pos=$pos");
+    
     $numParts=$h['numParts'];
     $numPoints=$h['numPoints'];
-    //$this->io->note("numParts $numParts numPoints=$numPoints");
     
     //
     $offset=[];
@@ -588,11 +597,7 @@ protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,
         $binarydata = fread($handle, 4);
         $d = unpack("VStart",$binarydata);
         $offset[$part]=$d['Start'];
-        //if(VERBOSE>=2)
-        //{
-        // $hs = unpack("H4hex",$binarydata);
-        // $this->io->note(" > parts[$part] offset: ".$offset[$part]." 0x".$hs['hex']."");
-        //}
+        
         $part++;
     }
     
@@ -613,21 +618,19 @@ protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,
             { $count=$numPoints-$points; }
             $points+=$count;
             $pointsPerPart[$part]=$count;
-            //$this->io->note(" < offset[$part] count: $count offset:".$offset[$part]." points:".$pointsPerPart[$part]);
+            
             $part++;
         }
     }
     
     //
     $part=0;
-    foreach($offset as $key=>$startpoint)
+    foreach($offset as $key=>$startPoint)
     {
-        $partpoints=$pointsPerPart[$part];
+        $partPoints=$pointsPerPart[$part];
         
-        $pointoffset=$pos+($numParts*4)+($startpoint*16);
-        fseek($handle,$pointoffset);
-        //if(VERBOSE>=2)
-        //$this->io->note(" >> parts[$part] : startpoint: $startpoint key: $key offset: $pointoffset ($partpoints part points)");
+        $pointOffset=$pos+($numParts*4)+($startPoint*16);
+        fseek($handle,$pointOffset);
         
         $points=0;
         $first['X']=0;
@@ -648,26 +651,19 @@ protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,
         else
             $this->cacheOutPolygon($point['X'],$point['Y']);
         
-        //if(VERBOSE>=3)
-        ////////////     $this->io->note("(".ftell($handle).") [$points] polygon: point: X=".$point['X'].",\tY=".$point['Y']);
-        
         $points++;
     } while(
     $points<$numPoints &&
-    $points<$partpoints
+    $points<$partPoints
     );
     
-    /*
-    if(VERBOSE>=2)
-    { $this->io->note("part=$part<numParts=$numParts and point=$point_index<numPoints=$numPoints and count=$count!=next_part_index=$next_part_index  and count=$count<=1 part+count=".($offset[$part]+$count)); $this->io->note(); }
-    */
     $part++;
     if($part>$numParts) break;
 }
 }
 
 
-// *****************************************************************************
+//
 protected function cacheOutPoint(float $x,float $y,string $type=' ',string $text='')
 {
     $x=$this->clipPrecision($x);
@@ -702,9 +698,9 @@ protected function cacheOutPolyline(float $x,float $y)
     $x=$this->clipPrecision($x);
     $y=$this->clipPrecision($y);
     
-    if(isset($this->opt['nodups']) && $this->lastshape=='L' && $this->lastlat==$x && $this->lastlon==$y)
+    if($this->getCacheNoDups() && $this->lastShape=='L' && $this->lastLat==$x && $this->lastLon==$y)
     {
-        $this->stats['points_roi_culled']++;
+        $this->stats['points roi culled']++;
         return;
     }
     
@@ -716,7 +712,7 @@ protected function cacheOutPolyline(float $x,float $y)
     $this->setShapePoly($x,$y,'L');
 }
 
-protected function cacheOutPolygonStart(float $x, float $y,string $type=' ',string $text='')
+protected function cacheOutPolygonStart(float $x, float $y, string $type=' ', string $text='')
 {
     $x=$this->clipPrecision($x);
     $y=$this->clipPrecision($y);
@@ -728,7 +724,6 @@ protected function cacheOutPolygonStart(float $x, float $y,string $type=' ',stri
     $this->stats['shapes']++;
     
     $this->updateCacheClipBounds($x,$y);
-    
     $this->setShapePoly($x,$y,'P');
 }
 
@@ -737,9 +732,9 @@ protected function cacheOutPolygon(float $x,float $y)
     $x=$this->clipPrecision($x);
     $y=$this->clipPrecision($y);
     
-    if(isset($this->opt['nodups']) && $this->lastshape=='P' && $this->lastlat==$x && $this->lastlon==$y)
+    if(isset($this->opt['nodups']) && $this->lastShape=='P' && $this->lastLat==$x && $this->lastLon==$y)
     {
-        $this->stats['points_roi_culled']++;
+        $this->stats['points roi culled']++;
         return;
     }
     
@@ -751,7 +746,7 @@ protected function cacheOutPolygon(float $x,float $y)
 }
 
 
-// *****************************************************************************
+//
 
 
 /**
@@ -764,19 +759,15 @@ public function cacheStatesList(string $filter="") {
     
     $records=[];
     
-    // echo "rootDataDir=$this->rootDataDir\n";
     // get list of county folders
     //////  if($filter=="") {
     $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->rootDataDir."/tiger{$this->yearfp}/");
-    // echo $this->rootDataDir."/tiger{$this->yearfp}/"."\n";
     //}
     // else {
     ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
     //}
     foreach ($finder as $dir) {
         $state_folder=$dir->getRelativePathname();
-        
-        //  echo "state_folder=$state_folder\n";
         
         $a=explode('_',$state_folder);
         $statefp=$a[0];
@@ -787,15 +778,13 @@ public function cacheStatesList(string $filter="") {
     }
     
     file_put_contents(
-    $this->outputDir."/".$this->output_filename,
+    $this->getDataCachePath()."/".$this->output_filename,
     implode("\n",$records)
     );
     
     //
     return $records;
 }
-
-
 
 
 /**
@@ -824,18 +813,19 @@ public function cacheCountiesList(string $filter="") {
         // fe_2007_47_county.dbf
         $dbf_filename=$this->dataDir."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
         
-        // echo "dbf_filename=$dbf_filename\n";
+        $dbf_records = DBase::fromFile($dbf_filename);
+        $this->stats['dbf files']++;
+        $this->stats['dbf records']+=count($dbf_records);
+        $this->stats['files']++;
         
-        $dbf = DBase::fromFile($dbf_filename);
-        
-        foreach ($dbf as $record) {
+        foreach ($dbf_records as $record) {
             //      $records[]=$record->getArrayCopy();
             $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];
         }
     }
     
     file_put_contents(
-    $this->outputDir."/".$this->output_filename,
+    $this->getDataCachePath()."/".$this->output_filename,
     implode("\n",$records)
     );
     
@@ -864,6 +854,8 @@ protected function getFilesForId(string $id): array
         $file="/fe_{$this->yearfp}_us_state";
         foreach($this->tigerline_subtypes as $subtype)
         {
+            $this->stats[$subtype['prefix'].' files']++;
+            
             $subtype['nameField']='NAMELSAD';
             $prefix=$subtype['prefix'];
             $files[]= [
@@ -888,6 +880,8 @@ protected function getFilesForId(string $id): array
     $file= "{$state_folder}/fe_{$this->yearfp}_{$id}_county";
     foreach($this->tigerline_subtypes as $subtype)
     {
+        $this->stats[$subtype['prefix'].' files']++;
+        
         $subtype['nameField']='NAMELSAD';
         
         $prefix=$subtype['prefix'];
@@ -902,47 +896,49 @@ protected function getFilesForId(string $id): array
         ];
     }
     return $files;
-    break;
-
-case 5:
-    $finder->directories()->depth("== 0")->path("/^".substr($id,0,2)."_(.*)/")->in($this->getDataPath());
+    //break;
+    
+    case 5:
+        $finder->directories()->depth("== 0")->path("/^".substr($id,0,2)."_(.*)/")->in($this->getDataPath());
+        foreach ($finder as $dir)
+        {
+            $state_folder=$dir->getRelativePathname();
+    }
+    
+    $finder->directories()->depth("== 0")->path("/^".$id."_(.*)/")->in($this->getDataPath()."/".$state_folder);
     foreach ($finder as $dir)
     {
-        $state_folder=$dir->getRelativePathname();
-}
-
-$finder->directories()->depth("== 0")->path("/^".$id."_(.*)/")->in($this->getDataPath()."/".$state_folder);
-foreach ($finder as $dir)
-{
-    $county_folder=$dir->getRelativePathname();
-}
-
-$file= "{$state_folder}/{$county_folder}/fe_{$this->yearfp}_{$id}_";
-
-foreach($this->tigerline_subtypes as $subtype)
-{
-    $prefix=$subtype['prefix'];
-    $files[]= [
-    'type'=>$subtype['type'],
-    'prefix'=>$subtype['prefix'],
-    'nameField'=>$subtype['nameField'],
-    'shp'=>$this->getDataPath()."/".$file.$prefix.".shp",
-    'shx'=>$this->getDataPath()."/".$file.$prefix.".shx",
-    'dbf'=>$this->getDataPath()."/".$file.$prefix.".dbf",
-    'prj'=>$this->getDataPath()."/".$file.$prefix.".prj",
-    ];
-}
-return $files;
-break;
-
-default:
+        $county_folder=$dir->getRelativePathname();
+    }
+    
+    $file= "{$state_folder}/{$county_folder}/fe_{$this->yearfp}_{$id}_";
+    
+    foreach($this->tigerline_subtypes as $subtype)
+    {
+        $this->stats[$subtype['prefix'].' files']++;
+        
+        $prefix=$subtype['prefix'];
+        $files[]= [
+        'type'=>$subtype['type'],
+        'prefix'=>$subtype['prefix'],
+        'nameField'=>$subtype['nameField'],
+        'shp'=>$this->getDataPath()."/".$file.$prefix.".shp",
+        'shx'=>$this->getDataPath()."/".$file.$prefix.".shx",
+        'dbf'=>$this->getDataPath()."/".$file.$prefix.".dbf",
+        'prj'=>$this->getDataPath()."/".$file.$prefix.".prj",
+        ];
+    }
     return $files;
+    //break;
+    
+    default:
+        return $files;
 }
 
 return $files;
 }
 
-// *****************************************************************************
+//
 /*
 protected function cacheGetShapefile(string $filename): array
 {
@@ -1033,5 +1029,63 @@ return '';
 */
 
 
+
+
+//
+public function getShx($shxFilename): array
+{
+    try {
+        $mfha=null;
+        $shx=[];
+        
+        $this->stats['shx files']++;
+        $size=filesize($shxFilename);
+        // $this->logger->debug("SHX::: $shxFilename ($size bytes)");
+        
+        $handle = @fopen($shxFilename, "rb");
+        if($handle !== FALSE) {
+            $binarydata = @fread($handle, 100);
+            
+            //main field header
+            $mfha = unpack(
+            "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
+            $binarydata);
+            //  print_shapefile_contents_mainheader($mfha);
+            // printMFHAResolution($mfha);
+            
+            $count=0;
+            $pos=ftell($handle);
+            while(!feof($handle) && ($pos+8)<$size)
+            {
+                $binarydata = fread($handle, 8);
+                $pos=ftell($handle);
+                $rh = unpack("NOffset/NContentLength",$binarydata);
+                $this->stats['shx records']++;
+                
+                $shx[]=array($rh['Offset'],$rh['ContentLength']);
+                
+                //   $this->logger->debug("+++ [".ftell($handle)."] Offset: ".$rh['Offset']."w ContentLength: ".$rh['ContentLength']."w");
+                
+                //
+                fseek($handle,$pos + $rh['ContentLength']*2,SEEK_SET);
+                $pos=ftell($handle);
+                
+                $count++;
+            }
+            
+            // $this->logger->debug("SHX>>> $count index count");
+            
+            fclose($handle);
+        } //handle if
+        
+        return ['header'=>$mfha,'index'=>$shx];
+    }
+    catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
+    {
+        return ['header'=>[],'index'=>[]];
+    }
+}
+
+//}
 
 }
