@@ -16,21 +16,12 @@ use Monolog\Monolog;
 
 class Tigerline
 {
-    protected $version="2.0.6";
+    protected $version="2.0.7";
     
     protected $container;
     protected $io;
     protected $logger;
     
-    //
-    private $cacheTTL=0;
-    
-    protected $rootDataDir="";
-    protected $dataDir="";
-    protected $rootDir="";
-    protected $dataCacheDir="";
-    protected $webDir="";
-    protected $mapDir="";
     
     protected $yearfp;
     protected $statefp="";
@@ -41,9 +32,6 @@ class Tigerline
     
     protected $width=640;
     protected $height=480;
-    
-    //
-    // protected $cull;
     
     /**
     */
@@ -57,36 +45,58 @@ class Tigerline
         $this->logger = $container->get('logger');
         $this->logger->info('Tigerline');
         
-        //
-        $this->rootDataDir=dirname($container->get('kernel')->getCacheDir())."/data";
-        $this->rootDir=($container->get('kernel')->getRootDir());
-        
-        $this->dataCacheDir=dirname($container->get('kernel')->getCacheDir())."/data.cache";
-        //        $this->dataCacheDir=$container->getParameter('output_dir');
-        if(!file_exists($this->getDataCachePath()))
-        {
-            mkdir($this->getDataCachePath());
-        }
-        
-        $this->webDir=$container->getParameter('web_dir');
-        if(!file_exists($this->getWebPath()))
-        {
-            mkdir($this->getWebPath());
-        }
-        
-        $this->mapDir=$container->getParameter('map_dir');
-        if(!file_exists($this->getMapPath()))
-        {
-            mkdir($this->getMapPath());
-        }
-        
         $this->yearfp=$this->getMostRecentCachedTigerlineYear();
-        
-        $this->dataDir=dirname($container->get('kernel')->getCacheDir())."/data/tiger{$this->yearfp}";
-        
-        $this->cacheTTL=intval($container->getParameter('cache_ttl'));//10 m ttl
     }
     
+    
+    public function getRootDataPath(): string
+    {
+        return dirname($container->get('kernel')->getCacheDir())."/data";
+    }
+    public function getDataPath(): string
+    {
+        return dirname($container->get('kernel')->getCacheDir())."/data/tiger{$this->yearfp}";
+    }
+    public function getRootPath(): string
+    {
+        return ($container->get('kernel')->getRootDir());
+    }
+    public function getDataCachePath(): string
+    {
+        $dir=dirname($container->get('kernel')->getCacheDir())."/data.cache";
+        //        $this->dataCacheDir=$container->getParameter('output_dir');
+        if(!file_exists($dir))
+        {
+            mkdir($dir);
+        }
+        
+        return $dir;
+    }
+    
+    public function cacheIdToFilename(int $id): string
+    {
+        return $this->getDataCachePath()."/{$id}.txt";
+    }
+    
+    public function getWebPath(): string
+    {
+        $dir=$container->getParameter('web_dir');
+        if(!file_exists($dir))
+        {
+            mkdir($dir);
+        }
+        return $dir;
+    }
+    public function getMapPath(): string
+    {
+        $dir=$container->getParameter('map_dir');
+        if(!file_exists($dir))
+        {
+            mkdir($dir);
+        }
+        
+        return $dir;
+    }
     
     protected function arrayToNameValue($array)
     {
@@ -98,36 +108,6 @@ class Tigerline
     }
     
     
-    public function getRootDataPath(): string
-    {
-        return $this->rootDataDir;
-    }
-    public function getDataPath(): string
-    {
-        return $this->dataDir;
-    }
-    public function getRootPath(): string
-    {
-        return $this->rootDir;
-    }
-    public function getDataCachePath(): string
-    {
-        return $this->dataCacheDir;
-    }
-    
-    public function cacheIdToFilename(int $id): string
-    {
-        return $this->getDataCachePath()."/{$id}.txt";
-    }
-    
-    public function getWebPath(): string
-    {
-        return $this->webDir;
-    }
-    public function getMapPath(): string
-    {
-        return $this->mapDir;
-    }
     public function getYear(): string
     {
         return $this->yearfp;
@@ -136,16 +116,17 @@ class Tigerline
     {
         return $this->statefp;
     }
+    
     public function getCacheTTL(): int
     {
-        return $this->cacheTTL;
+        return intval($container->getParameter('cache_ttl'));//10 m ttl
     }
     
     public function getMostRecentCachedTigerlineYear(): string
     {
         $finder = new Finder();
         
-        $finder->directories()->depth("== 0")->path("/^tiger[\d]{4}/")->in($this->rootDataDir)->sort(function ($a, $b)
+        $finder->directories()->depth("== 0")->path("/^tiger[\d]{4}/")->in($this->getRootDataPath())->sort(function ($a, $b)
         {
             return strcmp($b->getRealpath(), $a->getRealpath());
         }
@@ -189,15 +170,11 @@ class Tigerline
     }
     
     
-    
-    
-    
-    
     protected function removeUnsed(array $array)
     {
-        return $array; //todo
-        
+        return $array; //todo    
     }
+
     protected function printArray(array $array, string $name="")
     {
         $this->io->table(
@@ -241,21 +218,13 @@ class Tigerline
     }
     
     
-    
-    
-    
     protected function computeRegionMids(array $roi): array
     {
         $roi['Xmid']=(float)$roi['Xmin']+(((float)$roi['Xmax']-(float)$roi['Xmin'])/2);
         $roi['Ymid']=(float)$roi['Ymin']+(((float)$roi['Ymax']-(float)$roi['Ymin'])/2);
         return $roi;
     }
-    
-    
-    
-    
-    // *****************************************************************************
-    
+
     protected function updateCacheClipBounds(float $x,float $y)
     {
         if($x<$this->clip['Xmin']) $this->clip['Xmin']=$x;
@@ -265,34 +234,7 @@ class Tigerline
         if($y>$this->clip['Ymax']) $this->clip['Ymax']=$y;
     }
     
-    
-    
-    
-    
-    
-    
-    // *****************************************************************************
-    
-    
-    
-    /*
-    
-    protected function in_minres(array $mfha): bool
-    {
-    if(!isset($this->cull)) return false;
-    
-    // $this->printMFHAResolution($mfha);
-    
-    if($this->minimumResolution($mfha))
-    {
-    $this->cacheStats['files_minres_culled']++;
-    return true;
-    }
-    return false;
-    }
-    */
-    // *****************************************************************************
-    
+
     protected function printMFHAResolution($mfha)
     {
         $w=$mfha['Xmax']-$mfha['Xmin'];
@@ -301,6 +243,7 @@ class Tigerline
     }
     
 }
+
 /*
 Shapes
 L Line P polygon * point

@@ -18,6 +18,9 @@ class TigerlineCache extends Tigerline
 {
     protected $out;
     protected $opt;
+       
+    protected $roi;
+    protected $clip;
     
     public function __construct($container,SymfonyStyle $io)
     {
@@ -572,7 +575,7 @@ class TigerlineCache extends Tigerline
 //
 protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,string $text='')
 {
-    $this->stats['polygon']++;
+   // $this->stats['polygon']++;
     
     $binarydata = fread($handle, 40);
     $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
@@ -722,6 +725,7 @@ protected function cacheOutPolygonStart(float $x, float $y, string $type=' ', st
     
     $this->stats['points out']++;
     $this->stats['shapes']++;
+    $this->stats['polygon']++;
     
     $this->updateCacheClipBounds($x,$y);
     $this->setShapePoly($x,$y,'P');
@@ -732,13 +736,14 @@ protected function cacheOutPolygon(float $x,float $y)
     $x=$this->clipPrecision($x);
     $y=$this->clipPrecision($y);
     
-    if(isset($this->opt['nodups']) && $this->lastShape=='P' && $this->lastLat==$x && $this->lastLon==$y)
+    if($this->getCacheNoDups() && $this->lastShape=='P' && $this->lastLat==$x && $this->lastLon==$y)
     {
         $this->stats['points roi culled']++;
         return;
     }
     
     fputs($this->out,",".$x.",".$y);
+   
     $this->stats['points out']++;
     
     $this->updateCacheClipBounds($x,$y);
@@ -761,7 +766,7 @@ public function cacheStatesList(string $filter="") {
     
     // get list of county folders
     //////  if($filter=="") {
-    $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->rootDataDir."/tiger{$this->yearfp}/");
+    $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getRootDataPath()."/tiger{$this->yearfp}/");
     //}
     // else {
     ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
@@ -799,7 +804,7 @@ public function cacheCountiesList(string $filter="") {
     
     // get list of county folders
     //////  if($filter=="") {
-    $finder->directories()->depth("== 0")->path("/^[\d]{2,2}_(.*)/")->in($this->dataDir);
+    $finder->directories()->depth("== 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getDataPath());
     //}
     // else {
     ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
@@ -811,7 +816,7 @@ public function cacheCountiesList(string $filter="") {
         $statefp=$a[0];
         
         // fe_2007_47_county.dbf
-        $dbf_filename=$this->dataDir."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
+        $dbf_filename=$this->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
         
         $dbf_records = DBase::fromFile($dbf_filename);
         $this->stats['dbf files']++;

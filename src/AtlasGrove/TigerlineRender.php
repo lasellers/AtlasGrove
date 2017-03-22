@@ -102,7 +102,7 @@ class TigerlineRender extends Tigerline
     public function selectFont(): string
     {
         //
-        $fontsPath=$this->rootDir."/Resources/fonts/\*.ttf";
+        $fontsPath=$this->getRootPath()."/Resources/fonts/\*.ttf";
         $this->fonts=glob($fontsPath);
         
         if(count($this->fonts) > 0)
@@ -111,7 +111,7 @@ class TigerlineRender extends Tigerline
         }
         
         //
-        $this->font=$this->rootDir."/Resources/fonts/Tuffy.ttf";
+        $this->font=$this->getRootPath()."/Resources/fonts/Tuffy.ttf";
         $this->logger->info("font={$this->font}");
         
         return $this->font;
