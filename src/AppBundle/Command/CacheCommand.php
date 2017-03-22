@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
 use AtlasGrove\Tigerline as Tigerline;
 use AtlasGrove\TigerlineCache as TigerlineCache;
 
@@ -42,7 +41,6 @@ class CacheCommand extends ContainerAwareCommand
     {
         $io = new SymfonyStyle($input, $output);
         
-       // $util=new Utils($this->getContainer(),$io);
         $tigerline=new TigerlineCache($this->getContainer(),$io);
         
         $id = $input->getArgument('id')?:"";

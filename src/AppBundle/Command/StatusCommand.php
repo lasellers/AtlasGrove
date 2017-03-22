@@ -8,8 +8,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
-use AtlasGrove\Tigerline as Tigerline;
 use AtlasGrove\TigerlineCache as TigerlineCache;
 use AtlasGrove\TigerlineRender as TigerlineRender;
 
@@ -30,7 +28,6 @@ class StatusCommand extends ContainerAwareCommand
     {
         $io = new SymfonyStyle($input, $output);
         
-        $util=new Utils($this->getContainer(),$io);
         $tigerlineCache=new TigerlineCache($this->getContainer(),$io);
         $tigerlineRender=new TigerlineRender($this->getContainer(),$io);
         

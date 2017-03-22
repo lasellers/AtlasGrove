@@ -21,8 +21,8 @@ class Tigerline
     protected $container;
     protected $io;
     protected $logger;
-    
-    
+
+    //    
     protected $yearfp;
     protected $statefp="";
     
@@ -59,7 +59,7 @@ class Tigerline
     }
     public function getRootPath(): string
     {
-        return ($container->get('kernel')->getRootDir());
+        return $this->container->get('kernel')->getRootDir();
     }
     public function getDataCachePath(): string
     {

@@ -1091,6 +1091,4 @@ public function getShx($shxFilename): array
     }
 }
 
-//}
-
 }

@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
+use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
 use AtlasGrove\Tigerline as Tigerline;
 
 // php bin/console atlasgrove:downloads
@@ -52,7 +52,7 @@ class DownloadsCommand extends ContainerAwareCommand
     {
         $io = new SymfonyStyle($input, $output);
         
-        $util=new Utils($this->getContainer(),$io);
+        $tigerlineDownloads=new TigerlineDownloads($this->getContainer(),$io);
         $tigerline=new Tigerline($this->getContainer(),$io);
         
         $filter="";
@@ -64,36 +64,36 @@ class DownloadsCommand extends ContainerAwareCommand
         }
         else if($input->getOption('years',false))
         {
-            extract($util->getCacheYears($filter,true));
+            extract($tigerlineDownloads->getCacheYears($filter,true));
             $output->writeln("Wrote {$file}");
         }
         else if($input->getOption('states',false))
         {
-            extract($util->getCacheStates($filter,true));
+            extract($tigerlineDownloads->getCacheStates($filter,true));
             $output->writeln("Wrote {$file}");
         }
         else if($input->getOption('counties',false))
         {
-            extract($util->getCacheCounties($filter,true));
+            extract($tigerlineDownloads->getCacheCounties($filter,true));
             $output->writeln("Wrote {$file}");
         }
         else if($input->getOption('files',false))
         {
-            extract($util->getCacheFiles($filter,true));
+            extract($tigerlineDownloads->getCacheFiles($filter,true));
             $output->writeln("Wrote {$file}");
         }
         else
         {
-            extract($util->getCacheYears($filter,true));
+            extract($tigerlineDownloads->getCacheYears($filter,true));
             $output->writeln("Wrote {$file}");
             
-            extract($util->getCacheStates($filter,true));
+            extract($tigerlineDownloads->getCacheStates($filter,true));
             $output->writeln("Wrote {$file}");
             
-            extract($util->getCacheCounties($filter,true));
+            extract($tigerlineDownloads->getCacheCounties($filter,true));
             $output->writeln("Wrote {$file}");
             
-            extract($util->getCacheFiles($filter,true));
+            extract($tigerlineDownloads->getCacheFiles($filter,true));
             $output->writeln("Wrote {$file}");
         }
         

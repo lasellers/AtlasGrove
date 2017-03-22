@@ -246,7 +246,7 @@ class TigerlineRender extends Tigerline
                         $idsInBounds[]=$id;
                     }
                 }
-                catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
+                catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
                 {
                     $this->logger->error($e->getMessage());
                 }
@@ -281,7 +281,7 @@ class TigerlineRender extends Tigerline
                         $this->rois=array_merge([$roi],$this->rois,json_decode(trim(fgets($in)),TRUE));
                     }
                 }
-                catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
+                catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
                 {
                     $this->logger->error($e->getMessage());
                 }
@@ -414,7 +414,7 @@ class TigerlineRender extends Tigerline
             $tigerlineCache = new TigerlineCache($this->container,$this->io);
             if($tigerlineCache)
             {
-                // $i=1;
+                // $step=1;
                 foreach($cachedIds as $id) {
                     $this->io->section("Render shape {$id} to {$imageFilename}");
                     
@@ -424,15 +424,20 @@ class TigerlineRender extends Tigerline
                     
                     $this->renderImageFromROICache($im,$cacheFilename,$imageFilename);
                     
-                    // imagepng($im,$imageFilename.".$i.png",$this->getImageQuality()); //temp
-                    //  $i++;
+                    // imagepng($im,$imageFilename.".$step.png",$this->getImageQuality()); //temp
+                    //  $step++;
+                    
+                    // $this->logger->debug("Wrote step image $imageFilename");
+                    // $this->io->note(">>>> Wrote step image $imageFilename");
                 }
             }
             
             //
             imagepng($im,$imageFilename,$this->getImageQuality());
             imagedestroy($im);
-            $this->logger->debug(">>>> makeImage $imageFilename");
+            
+            $this->logger->debug("Wrote image $imageFilename");
+            $this->io->note(">>>> Wrote image $imageFilename");
         }
         
         $this->printStatistics();
@@ -513,7 +518,7 @@ class TigerlineRender extends Tigerline
                 
                 fclose($in);
             }
-            catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
             {
                 $this->logger->error($e->getMessage());
             }
@@ -560,7 +565,9 @@ class TigerlineRender extends Tigerline
                 
                 //line 4 of cache is clip extended region
                 $this->clip=json_decode(trim(fgets($in)),TRUE);
-           //     $this->printClip();
+                if(!is_array($this->clip)) {
+                    throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
+                }
                 $this->arrayToFloat($this->clip);
                 if(!$this->arrayIsFloat($this->clip)) {
                     $this->printClip();
@@ -629,14 +636,28 @@ class TigerlineRender extends Tigerline
                     //
                     imagepng($im,$imageFilename,$this->getImageQuality());
                     imagedestroy($im);
-                    $this->logger->debug(">>>> makeImage $imageFilename");
+                    
+                    $this->logger->debug("Wrote image $imageFilename");
+                    $this->io->note(">>>> Wrote image $imageFilename");
                 }
                 
-                fclose($in);
             }
-            catch (\Symfony\Component\Debug\Exception\ContextErrorException $e)
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
             {
                 $this->logger->error($e->getMessage());
+                
+                fclose($in);
+                
+                if(file_exists($cacheFilename)) {
+                    $this->logger->error("Cache file $cachefile deleted because of read error.");
+                    unlink($cacheFilename);
+                }
+            }
+            finally
+            {
+                if(!is_resource($in)){
+                    fclose($in);
+                }
             }
         }
     }

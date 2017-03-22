@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
 use AtlasGrove\Tigerline as Tigerline;
 
 use AtlasGrove\TigerlineCache as TigerlineCache;
@@ -53,7 +52,7 @@ class RenderCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        //  $util=new Utils($this->getContainer(),$io);
+
         $cache=new TigerlineCache($this->getContainer(),$io);
         $render=new TigerlineRender($this->getContainer(),$io);
         

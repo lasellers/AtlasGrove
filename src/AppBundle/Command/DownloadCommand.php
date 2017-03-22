@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
+use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
 use AtlasGrove\TigerlineDownload as TigerlineDownload;
 
 // php bin/console atlasgrove:download

@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\Utils as Utils;
+use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
 use AtlasGrove\Tigerline as Tigerline;
 
 // php bin/console atlasgrove:roads
@@ -36,7 +36,7 @@ class RoadsCommand extends ContainerAwareCommand
     {
         $io = new SymfonyStyle($input, $output);
         
-        $util=new Utils($this->getContainer(),$io);
+        $util=new TigerlineDownloads($this->getContainer(),$io);
         $tigerline=new Tigerline($this->getContainer(),$io);
         
         $filter = $input->getArgument('filter')?:"";
