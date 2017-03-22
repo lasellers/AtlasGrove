@@ -42,6 +42,7 @@ class StatusCommand extends ContainerAwareCommand
         ['Map Path',$tigerlineCache->getMapPath()],
         ['State',$tigerlineCache->getState()],
         ['Year',$tigerlineCache->getYear()],
+        ['Year Folder',$tigerlineCache->getYearFolder()],
         ['Cache TTL',$tigerlineCache->getCacheTTL()],
         ['Font',$tigerlineRender->getFont()]
         ]

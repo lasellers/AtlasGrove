@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
 use AtlasGrove\TigerlineDownload as TigerlineDownload;
 
 // php bin/console atlasgrove:download
@@ -30,7 +29,6 @@ class DownloadCommand extends ContainerAwareCommand
     {
         $io = new SymfonyStyle($input, $output);
         
-      //  $downloads=new TigerlineDownloads($this->getContainer(),$io);
         $download=new TigerlineDownload($this->getContainer(),$io);
         
         $state = $input->getArgument('state')?:"47";

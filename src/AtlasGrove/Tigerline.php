@@ -21,10 +21,12 @@ class Tigerline
     protected $container;
     protected $io;
     protected $logger;
-
-    //    
+    
+    //
     protected $yearfp;
     protected $statefp="";
+    protected $yearFolder;
+    // protected $stateFolder="";
     
     //
     protected $roi;
@@ -34,77 +36,105 @@ class Tigerline
     protected $height=480;
     
     public $tigerline_subtypes=[
-['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
-['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
-['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
-['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
-//['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
-//['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
-];
-
+    ['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
+    ['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
+    ['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
+    ['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
+    //['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
+    //['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
+    ];
+    
     /**
     */
     public function __construct($container,SymfonyStyle $io)
     {
-        //        parent::__construct($container,SymfonyStyle $io);
-        
         $this->container=$container;
         $this->io=$io;
         
         $this->logger = $container->get('logger');
         $this->logger->info('Tigerline');
         
-        $this->yearfp=$this->getMostRecentCachedTigerlineYear();
+        $this->computeMostRecentCachedTigerlineYear();
     }
     
+    public function computeMostRecentCachedTigerlineYear()
+    {
+        $finder = new Finder();
+        $finder->directories()->depth("== 0")->path("/^TIGER[\d]{4}/")->in($this->getRootDataPath())->sort(function ($a, $b)
+        {
+            return strcmp($b->getRealpath(), $a->getRealpath());
+        }
+        );
+        
+        $iterator = $finder->getIterator();
+        $iterator->rewind();
+        $dir = $iterator->current();
+        
+        if($iterator->count()>0) {
+            $this->yearFolder = $dir->getRelativePathname();
+            $this->yearfp=preg_replace("/[^\d+]*/","",$this->yearFolder);
+        }
+        /*
+        $matches = array_filter($this->years, function ($haystack) {
+        return preg_match("/(.+)".$this->year."/",$haystack);
+        });
+        $yearFolder=each($matches)['value'];
+        */
+    }
     
-    public function getRootDataPath(): string
+    public function checkPath(string $dir): string
     {
-        return dirname($this->container->get('kernel')->getCacheDir())."/data";
+        if(!file_exists($dir))
+        {
+            echo "checkPath = $dir\n";
+            mkdir($dir);
+        }
+        return $dir;
     }
-    public function getDataPath(): string
-    {
-        return dirname($this->container->get('kernel')->getCacheDir())."/data/tiger{$this->yearfp}";
-    }
+    
     public function getRootPath(): string
     {
         return $this->container->get('kernel')->getRootDir();
     }
+    public function getCachePath(): string
+    {
+        //        $dir=dirname($this->container->get('kernel')->getCacheDir());
+        $dir=dirname(dirname($this->container->get('kernel')->getRootDir()))."/cache";
+        echo "dir0=$dir\n";
+        return $this->checkPath($dir);
+    }
+    public function getRootDataPath(): string
+    {
+        $dir=$this->getCachePath()."/data";
+        echo "dir1=$dir\n";
+        return $this->checkPath($dir);
+    }
+    public function getDataPath(): string
+    {
+        return $this->getCachePath()."/data/{$this->yearFolder}";
+    }
     public function getDataCachePath(): string
     {
-        $dir=dirname($this->container->get('kernel')->getCacheDir())."/data.cache";
-        //        $this->dataCacheDir=$container->getParameter('output_dir');
-        if(!file_exists($dir))
-        {
-            mkdir($dir);
-        }
+        $dir=$this->getCachePath()."/data.cache";
+        echo "dir3=$dir\n";
         
-        return $dir;
-    }
-    
-    public function cacheIdToFilename(int $id): string
-    {
-        return $this->getDataCachePath()."/{$id}.txt";
+        return $this->checkPath($dir);
     }
     
     public function getWebPath(): string
     {
         $dir=$this->container->getParameter('web_dir');
-        if(!file_exists($dir))
-        {
-            mkdir($dir);
-        }
-        return $dir;
+        return $this->checkPath($dir);
     }
     public function getMapPath(): string
     {
         $dir=$this->container->getParameter('map_dir');
-        if(!file_exists($dir))
-        {
-            mkdir($dir);
-        }
-        
-        return $dir;
+        return $this->checkPath($dir);
+    }
+    
+    public function cacheIdToFilename(int $id): string
+    {
+        return $this->getDataCachePath()."/{$id}.txt";
     }
     
     protected function arrayToNameValue($array)
@@ -116,10 +146,13 @@ class Tigerline
         return $rows;
     }
     
-    
     public function getYear(): string
     {
         return $this->yearfp;
+    }
+      public function getYearFolder(): string
+    {
+        return $this->yearFolder;
     }
     public function getState(): string
     {
@@ -130,28 +163,6 @@ class Tigerline
     {
         return intval($this->container->getParameter('cache_ttl'));//10 m ttl
     }
-    
-    public function getMostRecentCachedTigerlineYear(): string
-    {
-        $finder = new Finder();
-        
-        $finder->directories()->depth("== 0")->path("/^tiger[\d]{4}/")->in($this->getRootDataPath())->sort(function ($a, $b)
-        {
-            return strcmp($b->getRealpath(), $a->getRealpath());
-        }
-        );
-        
-        $iterator = $finder->getIterator();
-        $iterator->rewind();
-        $dir = $iterator->current();
-        
-        $tigeryear_folder=$dir->getRelativePathname();
-        
-        $this->yearfp=preg_replace("/[^\d+]*/","",$tigeryear_folder);
-        
-        return $this->yearfp;
-    }
-    
     
     public function setClip(array $clip=[])
     {
@@ -181,9 +192,9 @@ class Tigerline
     
     protected function removeUnsed(array $array)
     {
-        return $array; //todo    
+        return $array; //todo
     }
-
+    
     protected function printArray(array $array, string $name="")
     {
         $this->io->table(
@@ -233,7 +244,7 @@ class Tigerline
         $roi['Ymid']=(float)$roi['Ymin']+(((float)$roi['Ymax']-(float)$roi['Ymin'])/2);
         return $roi;
     }
-
+    
     protected function updateCacheClipBounds(float $x,float $y)
     {
         if($x<$this->clip['Xmin']) $this->clip['Xmin']=$x;
@@ -243,7 +254,7 @@ class Tigerline
         if($y>$this->clip['Ymax']) $this->clip['Ymax']=$y;
     }
     
-
+    
     protected function printMFHAResolution($mfha)
     {
         $w=$mfha['Xmax']-$mfha['Xmin'];

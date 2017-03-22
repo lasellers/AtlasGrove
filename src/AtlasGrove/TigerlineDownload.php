@@ -14,108 +14,280 @@ use org\majkel\dbase\Table AS DBase;
 
 use Monolog\Monolog;
 
-use FtpClient\FtpClient;
+//use FtpClient\FtpClient;
+
+use ZipArchive;
 
 class TigerlineDownload extends Tigerline
 {
-    /*
-    use Touki\FTP\FTPFactory;
-    
-    $factory = new FTPFactory;
-    $ftp = $factory->build($connection);
-    */
-    /*
-    $connection = new Connection('host', 'username', 'password', $port = 21, $timeout = 90, $passive = false);
-    $connection = new AnonymousConnection('host', $port = 21, $timeout = 90, $passive = false);
-    $connection = new SSLConnection('host', 'username', 'password', $port = 21, $timeout = 90, $passive = false);
-    
-    $connection->open();
-    */
-    
-    //$ftp = new FTP();
-    
-    /*
-    $ftp->fileExists(new File('/foo'));
-    $ftp->fileExists(new File('/non/existant/file'))
-    $ftp->directoryExists(new Directory('/folder'))
-    $ftp->directoryExists(new Directory('/bar'))
-    
-    
-    $list = $ftp->findFilesystems(new Directory("/"));
-    var_dump($list);
-    
-    $file  = $ftp->findFileByName('file1.txt');
-    var_dump($file);
-    
-    */
-    
-    private $host="ftp2.census.gov";
+    private $host="148.129.75.35"; //ftp2.census.gov";
     private $user="anonymous";
     private $password="guest";
     
-    private $dir='/geo/tiger/TIGER2007FE/';
+    private $dir='/geo/tiger';
+    
+    private $conn_id;
+    
+    private $years;
+    private $year;
+    private $state;
+    
+    
+    public function __construct($container,SymfonyStyle $io)
+    {
+        parent::__construct($container,$io);
+    }
     
     // Atlasgrove\tigerlineDownload
     public function download(string $year="2007", string $state="47") {
         
+        $this->year=$year;
+        $this->state=$state;
+        $this->io->note("Year: $this->year");
+        $this->io->note("State: $this->state");
+        
         $this->io->note("Connecting to $this->host, $this->user, $this->password...");
         
-        $ftp = new \FtpClient\FtpClient();
-        $ftp->connect($this->host);
-        $ftp->login($this->user, $this->password);
+        $this->conn_id = ftp_connect($this->host);
+        if($this->conn_id === FALSE)
+        {
+            $this->io->error("No connection $this->host.");
+            return;
+        }
+        
+        $login_result = ftp_login($this->conn_id, $this->user, $this->password);
+        
+        $this->io->note("Passive mode...");
+        
+        ftp_pasv($this->conn_id, true);
         
         $this->io->note("Connected to $this->host, $this->user, $this->password");
         
-        $this->io->note("Getting directory...");
-        $ftp->chdir("/");
+        $dir=$this->dir;
+        $localFolder=$this->getRootDataPath();
+        $this->checkLocalFolder($localFolder);
+        $this->io->note("Changing directory 1... $dir\n");
+        ftp_chdir($this->conn_id,$dir);
+        echo "current directory: ".ftp_pwd($this->conn_id)."\n";
         
-        $total = $ftp->count();
-        var_dump($total);
+        //
+        $this->io->note("Getting years...");
+        $nlist = ftp_nlist($this->conn_id, ".");
         
-        $list = $ftp->ScanDir();
-        var_dump($list);
+        $this->years = $nlist;
+        $this->io->table(
+        ['Year'],
+        $this->arrayToNameValue($this->years)
+        );
         
-        $this->io->note("Changing to $this->dir");
-        $ftp->chdir($this->dir);
-        //   $wrapper->cdup();
-        //   $wrapper->get($this->getDataPath().'/foofile.txt', '/folder/foofile.txt');
+        //
+        $key = array_search($year, $this->years);
         
-        $this->io->note("Getting directory...");
+        $matches = array_filter($this->years, function ($haystack) {
+            return preg_match("/(.+)".$this->year."/",$haystack);
+        });
+        $yearFolder=each($matches)['value'];
+        echo "yearfolder=".$yearFolder."\n";
         
-        $total = $ftp->count();
-        var_dump($total);
+        $dir=$this->dir."/".$yearFolder;
+        $localFolder=$this->getRootDataPath()."/".$yearFolder;
+        $this->checkLocalFolder($localFolder);
         
-        $list = $ftp->ScanDir();
-        var_dump($list);
+        $this->io->note("Changing directory 2... $dir");
+        ftp_chdir($this->conn_id,$dir);
+        echo "current directory: ".ftp_pwd($this->conn_id)."\n";
+        
+        //
+        $this->io->note("Getting states...");
+        $states_nlist = ftp_nlist($this->conn_id, ".");
+        
+        $this->states = array_filter($states_nlist, function ($haystack) {
+            return !preg_match("/(.+)\.zip$/",$haystack);
+        });
+        $usdownloads = array_filter($states_nlist, function ($haystack) {
+            return preg_match("/(.+)_us_state\.zip$/",$haystack);
+        });
+        
+        $this->io->table(
+        ['States'],
+        $this->arrayToNameValue($this->states)
+        );
+        
+        $localFolder=$this->getRootDataPath()."/".$yearFolder;
+        $this->checkLocalFolder($localFolder);
+        
+        $this->downloadAndUnzipStubData($usdownloads,$localFolder,$name="US");
         
         
-        /*
-        get year folder
-        
-        $states =
-        
-        get fe_2007_47_county.zip
-        unzip here
-        
-        $counties= get all /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
-        
-        foreach($counties as $county)
+        foreach($usdownloads as $remoteFile)
         {
-        Index of /geo/tiger/TIGER2007FE/36_NEW_YORK/36001_Albany/
-        foreach($tigerline_subtypes as $subtype)
+            //states
+            $statefps = array_filter($states_nlist, function ($haystack) {
+                return substr($haystack,0,3)==$this->state."_";
+            });
+            $stateFolder=each($statefps)['value'];
+            echo "stateFolder=$stateFolder\n";
+            
+            $dir=$this->dir."/".$yearFolder."/".$stateFolder;
+            $this->io->note("Changing directory 3... dir");
+            ftp_chdir($this->conn_id,$dir);
+            echo "current directory: ".ftp_pwd($this->conn_id)."\n";
+            
+            
+            //
+            $this->io->note("Getting counties...");
+            $counties_nlist = ftp_nlist($this->conn_id, ".");
+            
+            $this->counties = array_filter($counties_nlist, function ($haystack) {
+                return !preg_match("/(.+)\.zip$/",$haystack);
+            });
+            $countydownloads = array_filter($counties_nlist, function ($haystack) {
+                return preg_match("/(.+)_county\.zip$/",$haystack);
+            });
+            
+            $this->io->table(
+            ['Counties'],
+            $this->arrayToNameValue($this->counties)
+            );
+            
+            
+            $localFolder=$this->getRootDataPath()."/".$yearFolder."/".$stateFolder;
+            $this->downloadAndUnzipStubData($countydownloads,$localFolder,$name="County");
+            
+            
+            foreach($this->counties as $countyFolder)
+            {
+                $localFolder=$this->getRootDataPath()."/".$yearFolder."/".$stateFolder."/".$countyFolder;
+                
+                $dir=$this->dir."/".$yearFolder."/".$stateFolder."/".$countyFolder;
+                $this->io->note("Changing directory 4... $dir");
+                ftp_chdir($this->conn_id,$dir);
+                echo "current directory: ".ftp_pwd($this->conn_id)."\n";
+                
+                $this->io->note("Getting county data...");
+                $countydata_nlist = ftp_nlist($this->conn_id, ".");
+                
+                $countydatadownloads = array_filter($countydata_nlist, function ($haystack) {
+                    return preg_match("/(.+)_(arealm|areawater|edges|pointlm|featnames)\.zip$/",$haystack);
+                });
+                
+                $this->downloadAndUnzipStubData($countydatadownloads,$localFolder,$name="County Data");
+                
+            }
+            
+        }
+        
+        //
+        ftp_close($this->conn_id);
+    }
+    
+    private function changeFolder($dir)
+    {
+        $this->io->note("* Changing directory ... $dir");
+        ftp_chdir($this->conn_id,$dir);
+        echo "current directory: ".ftp_pwd($this->conn_id)."\n";
+    }
+
+    private function downloadAndUnzipStubData($stubs,$localFolder,$name="")
+    {
+        $this->io->table(
+        ["{$name} downloads"],
+        $this->arrayToNameValue($stubs)
+        );
+        
+        //
+        $this->checkLocalFolder($localFolder);
+        
+        // download ...
+        foreach($stubs as $remoteFile)
         {
-        $zip=$ftp->get("fe_2007_36001_arealm.zip","arealm.zip");
-        unzip($zip...) //here
-        
-        delete($zip);
+            $localFile=$localFolder."/".$remoteFile;
+            echo "* localFile=$localFile\n";
+            echo "* remoteFile=$remoteFile\n";
+            $this->checkLocalFolder($localFolder);
+            
+            $this->downloadZip($localFile,$remoteFile);
+            $this->extractZip($localFile);
+            
+            unlink($localFile);
         }
+    }
+    
+    private function checkLocalFolder($localFolder)
+    {
+        echo "checkLocalFolder=$localFolder\n";
+        if(!file_exists($localFolder)) {
+            mkdir($localFolder);
         }
         
-        */
-        $ftp->close();
+    }
+    
+    private function downloadZip($localFile,$remoteFile)
+    {
+        $handle = fopen($localFile, 'w');
+        if($handle == FALSE) {
+            return false;
+        }
+        
+        if (ftp_fget($this->conn_id, $handle, $remoteFile, FTP_BINARY, 0)) {
+            echo "successfully written to $localFile\n";
+        } else {
+            echo "There was a problem while downloading $remoteFile to $localFile\n";
+        }
+        
+        fclose($handle);
+        
+        return true;
+    }
+    
+    private function zipFlatten ( $zipfile, $dest='.' )
+    {
+        $zip = new ZipArchive;
+        if ( $zip->open( $zipfile ) )
+        {
+            for ( $i=0; $i < $zip->numFiles; $i++ )
+            {
+                $entry = $zip->getNameIndex($i);
+                if ( substr( $entry, -1 ) == '/' ) continue; // skip directories
+                
+                $fp = $zip->getStream( $entry );
+                $ofp = fopen( $dest.'/'.basename($entry), 'w' );
+                
+                if ( ! $fp )
+                    throw new Exception('Unable to extract the file.');
+                
+                while ( ! feof( $fp ) )
+                    fwrite( $ofp, fread($fp, 8192) );
+                
+                fclose($fp);
+                fclose($ofp);
+            }
+            
+            $zip->close();
+        }
+        else
+            return false;
+        
+        return $zip;
+    }
+    
+    
+    private function extractZip($localFile)
+    {
+        $localFolder=dirname($localFile);
+        
+       // $this->zipFlatten($localFile);
+        
+        $zip = new ZipArchive;
+        $res = $zip->open($localFile);
+        if ($res === TRUE) {
+            $zip->extractTo($localFolder);
+            $zip->close();
+            echo "unzipped $localFile\n";
+        } else {
+            echo "failed to unzip $localFile\n";
+        }
         
     }
     
 }
-// https://www.census.gov/cgi-bin/geo/shapefiles/state-files?state=47
-// https://www.census.gov/cgi-bin/geo/shapefiles/county-files?county=47001

@@ -18,7 +18,7 @@ class TigerlineCache extends Tigerline
 {
     protected $out;
     protected $opt;
-       
+    
     protected $roi;
     protected $clip;
     
@@ -575,7 +575,7 @@ class TigerlineCache extends Tigerline
 //
 protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,string $text='')
 {
-   // $this->stats['polygon']++;
+    // $this->stats['polygon']++;
     
     $binarydata = fread($handle, 40);
     $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
@@ -743,7 +743,7 @@ protected function cacheOutPolygon(float $x,float $y)
     }
     
     fputs($this->out,",".$x.",".$y);
-   
+    
     $this->stats['points out']++;
     
     $this->updateCacheClipBounds($x,$y);
@@ -766,7 +766,7 @@ public function cacheStatesList(string $filter="") {
     
     // get list of county folders
     //////  if($filter=="") {
-    $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getRootDataPath()."/tiger{$this->yearfp}/");
+    $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getRootDataPath()."/".$this->getYearFolder()."/");
     //}
     // else {
     ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
