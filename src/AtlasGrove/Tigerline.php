@@ -51,11 +51,11 @@ class Tigerline
     
     public function getRootDataPath(): string
     {
-        return dirname($container->get('kernel')->getCacheDir())."/data";
+        return dirname($this->container->get('kernel')->getCacheDir())."/data";
     }
     public function getDataPath(): string
     {
-        return dirname($container->get('kernel')->getCacheDir())."/data/tiger{$this->yearfp}";
+        return dirname($this->container->get('kernel')->getCacheDir())."/data/tiger{$this->yearfp}";
     }
     public function getRootPath(): string
     {
@@ -63,7 +63,7 @@ class Tigerline
     }
     public function getDataCachePath(): string
     {
-        $dir=dirname($container->get('kernel')->getCacheDir())."/data.cache";
+        $dir=dirname($this->container->get('kernel')->getCacheDir())."/data.cache";
         //        $this->dataCacheDir=$container->getParameter('output_dir');
         if(!file_exists($dir))
         {
@@ -80,7 +80,7 @@ class Tigerline
     
     public function getWebPath(): string
     {
-        $dir=$container->getParameter('web_dir');
+        $dir=$this->container->getParameter('web_dir');
         if(!file_exists($dir))
         {
             mkdir($dir);
@@ -89,7 +89,7 @@ class Tigerline
     }
     public function getMapPath(): string
     {
-        $dir=$container->getParameter('map_dir');
+        $dir=$this->container->getParameter('map_dir');
         if(!file_exists($dir))
         {
             mkdir($dir);
@@ -119,7 +119,7 @@ class Tigerline
     
     public function getCacheTTL(): int
     {
-        return intval($container->getParameter('cache_ttl'));//10 m ttl
+        return intval($this->container->getParameter('cache_ttl'));//10 m ttl
     }
     
     public function getMostRecentCachedTigerlineYear(): string
