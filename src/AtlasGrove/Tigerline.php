@@ -33,6 +33,15 @@ class Tigerline
     protected $width=640;
     protected $height=480;
     
+    public $tigerline_subtypes=[
+['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
+['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
+['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
+['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
+//['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
+//['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
+];
+
     /**
     */
     public function __construct($container,SymfonyStyle $io)

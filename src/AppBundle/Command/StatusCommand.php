@@ -37,7 +37,7 @@ class StatusCommand extends ContainerAwareCommand
         ['Root Path',$tigerlineCache->getRootPath()],
         ['Root Data Path',$tigerlineCache->getRootDataPath()],
         ['Data Path',$tigerlineCache->getDataPath()],
-        ['Output Path',$tigerlineCache->getOutputPath()],
+        ['Data.cache Path',$tigerlineCache->getDataCachePath()],
         ['Web Path',$tigerlineCache->getWebPath()],
         ['Map Path',$tigerlineCache->getMapPath()],
         ['State',$tigerlineCache->getState()],

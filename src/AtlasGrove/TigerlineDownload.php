@@ -55,16 +55,6 @@ class TigerlineDownload extends Tigerline
     
     private $dir='/geo/tiger/TIGER2007FE/';
     
-    private $tigerline_subtypes=[
-    ['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
-    ['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
-    ['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
-    ['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
-    //['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
-    //['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
-    ];
-    
-    
     // Atlasgrove\tigerlineDownload
     public function download(string $year="2007", string $state="47") {
         
@@ -127,3 +117,5 @@ class TigerlineDownload extends Tigerline
     }
     
 }
+// https://www.census.gov/cgi-bin/geo/shapefiles/state-files?state=47
+// https://www.census.gov/cgi-bin/geo/shapefiles/county-files?county=47001

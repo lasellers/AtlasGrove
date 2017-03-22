@@ -838,14 +838,7 @@ public function cacheCountiesList(string $filter="") {
     return $records;
 }
 
-private $tigerline_subtypes=[
-['prefix'=>'arealm','type'=>'A','nameField'=>'FULLNAME'],
-['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
-['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
-['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
-//['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
-//['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
-];
+
 
 protected function getFilesForId(string $id): array
 {

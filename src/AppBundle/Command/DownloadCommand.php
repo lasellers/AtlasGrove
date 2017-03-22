@@ -20,22 +20,22 @@ class DownloadCommand extends ContainerAwareCommand
         $this->setName('atlasgrove:download');
         $this->setDescription('downloads Tiger/Line shapefiles to cache (parms: year, state)');
         
-        $this->addArgument('year', InputArgument::REQUIRED);
-        $this->addArgument('state', InputArgument::REQUIRED);
+        $this->addArgument('state', InputArgument::OPTIONAL);
+        $this->addArgument('year', InputArgument::OPTIONAL);
         
-        $this->addOption('path', 'p', InputOption::VALUE_REQUIRED, '', getcwd());
+       // $this->addOption('path', 'p', InputOption::OPTIONAL, '', getcwd());
     }
     
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
         
-        $util=new Utils($this->getContainer(),$io);
-        $tigerline=new TigerlineDownload($this->getContainer(),$io);
+      //  $downloads=new TigerlineDownloads($this->getContainer(),$io);
+        $download=new TigerlineDownload($this->getContainer(),$io);
         
-        $year = $input->getArgument('year')?:"";
-        $state = $input->getArgument('state')?:"";
+        $state = $input->getArgument('state')?:"47";
+        $year = $input->getArgument('year')?:"2007";
         
-        $tigerline->download($year,$state);
+        $download->download($year,$state);
     }
 }

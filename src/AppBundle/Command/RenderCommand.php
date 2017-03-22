@@ -52,7 +52,7 @@ class RenderCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-
+        
         $cache=new TigerlineCache($this->getContainer(),$io);
         $render=new TigerlineRender($this->getContainer(),$io);
         
@@ -103,106 +103,116 @@ class RenderCommand extends ContainerAwareCommand
             $render->setRegionType($region);
         }
         
-        $roi = $input->getOption('roi');
-        if(strlen($roi)>0) {
-            $a=explode(",",$roi);
-            $records=$render->renderROI([
-            'Xmin'=> $a[0],
-            'Ymin'=> $a[1],
-            'Xmax'=> $a[2],
-            'Ymax'=> $a[3]
-            ]);
-        }
-        
-        
-        $test = $input->getOption('test');
-        if(strlen($test)>0) {
-            
-            switch($test) {
-                case "all":
-                    $records=$render->renderROI([
-                    'Xmin'=> -130,
-                    'Ymin'=> 20,
-                    'Xmax'=>-70,
-                    'Ymax'=> 50
-                    ]);
-                    break;
-                
-                case "us":
-                    $records=$render->renderROI([
-                    'Xmin'=> -130,
-                    'Ymin'=> 20,
-                    'Xmax'=>-70,
-                    'Ymax'=> 50
-                    ]);
-                    break;
-                
-                case "etn":
-                    $records=$render->renderROI([
-                    'Xmin'=> -85-.5+.2+.1,
-                    'Ymin'=> 34.982924+.4,
-                    'Xmax'=>-81-.5-.2,
-                    'Ymax'=> 36.678118+.4
-                    ]);
-                    break;
-                
-                case "tn":
-                    $records=$render->renderROI([
-                    'Xmin'=> -90.31029799999999,
-                    'Ymin'=> -81.6469,
-                    'Xmax'=>-81.6469,
-                    'Ymax'=> 36.678118
-                    ]);
-                    break;
-                
-                case "lod0":
-                    $records=$render->renderROI([
-                    'Xmin'=> -85-.5+.2+.1,
-                    'Ymin'=> 34.982924,
-                    'Xmax'=>-81-.5-.2,
-                    'Ymax'=> 36.678118+.3
-                    ]);
-                    break;
-                
-                case "narrow":
-                    $records=$render->renderROI([
-                    'Xmin'=> -85-.5+.2+.1,
-                    'Ymin'=> 34.982924+.4,
-                    'Xmax'=>-81-.5-.2,
-                    'Ymax'=> 36.678118+.4
-                    ]);
-                    break;
-                
-                case "blank":
-                    $records=$render->renderROI([
-                    'Xmin'=> -100,
-                    'Ymin'=> 60,
-                    'Xmax'=>-100,
-                    'Ymax'=> 60
-                    ]);
-                    break;
-                
-                default:
+        //
+        if($input->getOption('roi')>0) {
+            $roi = $input->getOption('roi');
+            if(strlen($roi)>0) {
+                $a=explode(",",$roi);
+                $records=$render->renderROI([
+                'Xmin'=> $a[0],
+                'Ymin'=> $a[1],
+                'Xmax'=> $a[2],
+                'Ymax'=> $a[3]
+                ]);
             }
-        }
-        
-        
-        if($input->getOption('states',false)||$input->getOption('all',false)) {
+            
+        } else if($input->getOption('test')>0) {
+            $test = $input->getOption('test');
+            if(strlen($test)>0) {
+                
+                switch($test) {
+                    case "all":
+                        $records=$render->renderROI([
+                        'Xmin'=> -130,
+                        'Ymin'=> 20,
+                        'Xmax'=>-70,
+                        'Ymax'=> 50
+                        ]);
+                        break;
+                    
+                    case "us":
+                        $records=$render->renderROI([
+                        'Xmin'=> -130,
+                        'Ymin'=> 20,
+                        'Xmax'=>-70,
+                        'Ymax'=> 50
+                        ]);
+                        break;
+                    
+                    case "etn":
+                        $records=$render->renderROI([
+                        'Xmin'=> -85-.5+.2+.1,
+                        'Ymin'=> 34.982924+.4,
+                        'Xmax'=>-81-.5-.2,
+                        'Ymax'=> 36.678118+.4
+                        ]);
+                        break;
+                    
+                    case "tn":
+                        $records=$render->renderROI([
+                        'Xmin'=> -90.31029799999999,
+                        'Ymin'=> -81.6469,
+                        'Xmax'=>-81.6469,
+                        'Ymax'=> 36.678118
+                        ]);
+                        break;
+                    
+                    case "lod0":
+                        $records=$render->renderROI([
+                        'Xmin'=> -85-.5+.2+.1,
+                        'Ymin'=> 34.982924,
+                        'Xmax'=>-81-.5-.2,
+                        'Ymax'=> 36.678118+.3
+                        ]);
+                        break;
+                    
+                    case "narrow":
+                        $records=$render->renderROI([
+                        'Xmin'=> -85-.5+.2+.1,
+                        'Ymin'=> 34.982924+.4,
+                        'Xmax'=>-81-.5-.2,
+                        'Ymax'=> 36.678118+.4
+                        ]);
+                        break;
+                    
+                    case "blank":
+                        $records=$render->renderROI([
+                        'Xmin'=> -100,
+                        'Ymin'=> 60,
+                        'Xmax'=>-100,
+                        'Ymax'=> 60
+                        ]);
+                        break;
+                    
+                    default:
+                }
+            }
+            
+        } else if($input->getOption('states',false)||$input->getOption('all',false)) {
             $io->title('Render States Shapes');
             $files=$cache->cacheStatesList();
             $render->renderShapes($files,$force);
         }
         
-        if($input->getOption('counties',false)||$input->getOption('all',false)) {
+        else if($input->getOption('counties',false)||$input->getOption('all',false)) {
             $io->title('Render Counties Shapes');
             $files=$cache->cacheCountiesList();
             $render->renderShapes($files,$force);
         }
         
-        if($id>0) {
+        else if($id>0) {
             $io->title("Cache Id {$id}");
             $render->renderShape($id,$force);
             //  $io->table(['id','county','full'],$records);
+        }
+        else {
+            $io->title('Render all');
+            
+            $files=$cache->cacheStatesList();
+            $render->renderShapes($files,$force);
+            
+            $files=$cache->cacheCountiesList();
+            $render->renderShapes($files,$force);
         }
         
     }

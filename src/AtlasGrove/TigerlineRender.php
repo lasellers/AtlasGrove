@@ -782,7 +782,7 @@ if($this->getImageLogo())
 {
     $logo_color=$this->getColor('logo');
     // color = imageColorAllocateAlpha($im, 48, 64, 32,90);
-    $size=32; $angle=0; $x=0; $y = $this->clip['height']-$size;
+    $size=(sqrt($this->width)/2.0); $angle=0; $x=0; $y = $this->clip['height']-$size;
     imagettftext($im, $size, $angle, $x, $y, $logo_color, $this->font,
     "Rendered ".date('r',time())." - US Census Data Tiger/Line {$this->yearfp} - $this->width x $this->height ($lines)"
     );
