@@ -322,7 +322,13 @@ class TigerlineCache extends Tigerline
     //
     protected function cacheShapefileContents(string $dbfFilename,string $cacheFilename,string $shpFilename,string $type, string $namefield="FULLNAME")
     {
+        if(!file_exists($dbfFilename))
+        {
+            return;
+        }
+        
         $dbf_records = DBase::fromFile($dbfFilename);
+        
         $this->stats['dbf files']++;
         $this->stats['dbf records']+=count($dbf_records);
         $this->stats['files']++;
@@ -816,16 +822,18 @@ public function cacheCountiesList(string $filter="") {
         $statefp=$a[0];
         
         // fe_2007_47_county.dbf
-        $dbf_filename=$this->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
-        
-        $dbf_records = DBase::fromFile($dbf_filename);
-        $this->stats['dbf files']++;
-        $this->stats['dbf records']+=count($dbf_records);
-        $this->stats['files']++;
-        
-        foreach ($dbf_records as $record) {
-            //      $records[]=$record->getArrayCopy();
-            $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];
+        $dbfFilename=$this->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
+        if(file_exists($dbfFilename))
+        {
+            $dbf_records = DBase::fromFile($dbfFilename);
+            $this->stats['dbf files']++;
+            $this->stats['dbf records']+=count($dbf_records);
+            $this->stats['files']++;
+            
+            foreach ($dbf_records as $record) {
+                //      $records[]=$record->getArrayCopy();
+                $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];
+            }
         }
     }
     

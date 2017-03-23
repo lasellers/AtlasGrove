@@ -86,7 +86,7 @@ class Tigerline
     {
         if(!file_exists($dir))
         {
-            echo "checkPath = $dir\n";
+           // echo "checkPath = $dir\n";
             mkdir($dir);
         }
         return $dir;
@@ -100,13 +100,13 @@ class Tigerline
     {
         //        $dir=dirname($this->container->get('kernel')->getCacheDir());
         $dir=dirname(dirname($this->container->get('kernel')->getRootDir()))."/cache";
-        echo "dir0=$dir\n";
+      //  echo "dir0=$dir\n";
         return $this->checkPath($dir);
     }
     public function getRootDataPath(): string
     {
         $dir=$this->getCachePath()."/data";
-        echo "dir1=$dir\n";
+     //   echo "dir1=$dir\n";
         return $this->checkPath($dir);
     }
     public function getDataPath(): string
@@ -116,7 +116,7 @@ class Tigerline
     public function getDataCachePath(): string
     {
         $dir=$this->getCachePath()."/data.cache";
-        echo "dir3=$dir\n";
+     //   echo "dir3=$dir\n";
         
         return $this->checkPath($dir);
     }

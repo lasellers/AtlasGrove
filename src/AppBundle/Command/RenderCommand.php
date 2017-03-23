@@ -60,6 +60,9 @@ class RenderCommand extends ContainerAwareCommand
         
         $force = $input->getOption('force',false)?true:false;
         $io->note('Force '.($force?"YES":"NO"));
+        if($force) {
+            $render->setForce($force);
+        }
         
         $width = $input->getOption('width');
         if($width>0) {
@@ -108,7 +111,7 @@ class RenderCommand extends ContainerAwareCommand
             $roi = $input->getOption('roi');
             if(strlen($roi)>0) {
                 $a=explode(",",$roi);
-                $records=$render->renderROI([
+                $records=$render->renderShapeROI([
                 'Xmin'=> $a[0],
                 'Ymin'=> $a[1],
                 'Xmax'=> $a[2],
@@ -122,7 +125,7 @@ class RenderCommand extends ContainerAwareCommand
                 
                 switch($test) {
                     case "all":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -130,
                         'Ymin'=> 20,
                         'Xmax'=>-70,
@@ -131,7 +134,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "us":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -130,
                         'Ymin'=> 20,
                         'Xmax'=>-70,
@@ -140,7 +143,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "etn":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -85-.5+.2+.1,
                         'Ymin'=> 34.982924+.4,
                         'Xmax'=>-81-.5-.2,
@@ -149,7 +152,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "tn":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -90.31029799999999,
                         'Ymin'=> -81.6469,
                         'Xmax'=>-81.6469,
@@ -158,7 +161,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "lod0":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -85-.5+.2+.1,
                         'Ymin'=> 34.982924,
                         'Xmax'=>-81-.5-.2,
@@ -167,7 +170,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "narrow":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -85-.5+.2+.1,
                         'Ymin'=> 34.982924+.4,
                         'Xmax'=>-81-.5-.2,
@@ -176,7 +179,7 @@ class RenderCommand extends ContainerAwareCommand
                         break;
                     
                     case "blank":
-                        $records=$render->renderROI([
+                        $records=$render->renderShapeROI([
                         'Xmin'=> -100,
                         'Ymin'=> 60,
                         'Xmax'=>-100,

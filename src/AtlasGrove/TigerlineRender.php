@@ -16,11 +16,11 @@ use Monolog\Monolog;
 
 class TigerlineRender extends Tigerline
 {
-    private $zoom=0;
+    private $force=false;
     
-    private $lastlat=0;
-    private $lastlon=0;
-    private $lastshape='';
+    private $lastLat=0;
+    private $lastLon=0;
+    private $lastShape='';
     
     private $thickness;
     private $fonts;
@@ -88,6 +88,10 @@ class TigerlineRender extends Tigerline
         $this->thickness=$thickness>1?$thickness:1;
     }
     
+    public function setForce(bool $state=false)
+    {
+        $this->force=$state;
+    }
     
     public function getFont(): string
     {
@@ -175,7 +179,14 @@ class TigerlineRender extends Tigerline
     //
     public function renderShape($id) {
         $cacheFilename=$this->cacheIdToFilename($id);
+        if(!file_exists($cacheFilename)) {
+            return;
+        }
+        
         $imageFilename=$this->getMapPath()."/{$id}.png";
+        if(file_exists($imageFilename)&&$this->force==false) {
+            return;
+        }
         
         $this->io->section("Render shape {$id} to {$imageFilename}");
         
@@ -385,7 +396,7 @@ class TigerlineRender extends Tigerline
     }
     
     //renderShapeROI
-    public function renderROI(array $cull) {
+    public function renderShapeROI(array $cull) {
         $this->cull=$cull;
         
         //
@@ -410,6 +421,9 @@ class TigerlineRender extends Tigerline
             
             $partialImageFilename=$this->boundingBoxToPartialFilename($this->cull);
             $imageFilename=$this->getMapPath()."/{$partialImageFilename}.png";
+            if(file_exists($imageFilename)&&$this->force==false) {
+                return;
+            }
             
             $tigerlineCache = new TigerlineCache($this->container,$this->io);
             if($tigerlineCache)
@@ -532,6 +546,7 @@ class TigerlineRender extends Tigerline
     
     private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     {
+        
         //
         $this->logger->info("renderImageFromSingleCache: $cacheFilename to $imageFilename");
         
@@ -545,6 +560,7 @@ class TigerlineRender extends Tigerline
             try {
                 $size=filesize($cacheFilename);
                 if($size<=0) {
+                    return;
                     // $this->printROI();
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
                 }
@@ -557,6 +573,7 @@ class TigerlineRender extends Tigerline
                 $this->arrayToFloat($this->roi);
                 $this->printROI();
                 if(!$this->arrayIsFloat($this->roi)) {
+                    return;
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
                 }
                 
@@ -566,10 +583,12 @@ class TigerlineRender extends Tigerline
                 //line 4 of cache is clip extended region
                 $this->clip=json_decode(trim(fgets($in)),TRUE);
                 if(!is_array($this->clip)) {
+                    return;
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
                 }
                 $this->arrayToFloat($this->clip);
                 if(!$this->arrayIsFloat($this->clip)) {
+                    return;
                     $this->printClip();
                     throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
                 }
@@ -1073,6 +1092,5 @@ private function getThicknessByShapeAndType(string $shape,string $type): int
     // imagesetthickness($im,$this->thickness);
     return $this->thickness;
 }
-
 
 }
