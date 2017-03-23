@@ -46,7 +46,7 @@ class Tigerline
     
     /**
     */
-    public function __construct($container,SymfonyStyle $io)
+    public function __construct($container,SymfonyStyle $io=null)
     {
         $this->container=$container;
         $this->io=$io;
@@ -86,7 +86,6 @@ class Tigerline
     {
         if(!file_exists($dir))
         {
-           // echo "checkPath = $dir\n";
             mkdir($dir);
         }
         return $dir;
@@ -98,15 +97,15 @@ class Tigerline
     }
     public function getCachePath(): string
     {
-        //        $dir=dirname($this->container->get('kernel')->getCacheDir());
+        if($this->container->getParameter('cache_stored_outside_project'))
         $dir=dirname(dirname($this->container->get('kernel')->getRootDir()))."/cache";
-      //  echo "dir0=$dir\n";
+        else
+            $dir=dirname($this->container->get('kernel')->getCacheDir());
         return $this->checkPath($dir);
     }
     public function getRootDataPath(): string
     {
         $dir=$this->getCachePath()."/data";
-     //   echo "dir1=$dir\n";
         return $this->checkPath($dir);
     }
     public function getDataPath(): string
@@ -116,11 +115,8 @@ class Tigerline
     public function getDataCachePath(): string
     {
         $dir=$this->getCachePath()."/data.cache";
-     //   echo "dir3=$dir\n";
-        
         return $this->checkPath($dir);
     }
-    
     public function getWebPath(): string
     {
         $dir=$this->container->getParameter('web_dir');
@@ -132,7 +128,7 @@ class Tigerline
         return $this->checkPath($dir);
     }
     
-    public function cacheIdToFilename(int $id): string
+      public function cacheIdToFilename(int $id): string
     {
         return $this->getDataCachePath()."/{$id}.txt";
     }
@@ -150,7 +146,7 @@ class Tigerline
     {
         return $this->yearfp;
     }
-      public function getYearFolder(): string
+    public function getYearFolder(): string
     {
         return $this->yearFolder;
     }
@@ -189,7 +185,6 @@ class Tigerline
         $this->height=$height>64?$height:64;
     }
     
-    
     protected function removeUnsed(array $array)
     {
         return $array; //todo
@@ -217,7 +212,6 @@ class Tigerline
         $this->printArray($this->clip,"Clip");
     }
     
-    
     protected function arrayToFloat(array &$array)
     {
         foreach($array as $key=>$value)
@@ -236,8 +230,7 @@ class Tigerline
         }
         return true;
     }
-    
-    
+
     protected function computeRegionMids(array $roi): array
     {
         $roi['Xmid']=(float)$roi['Xmin']+(((float)$roi['Xmax']-(float)$roi['Xmin'])/2);
@@ -253,7 +246,6 @@ class Tigerline
         if($x>$this->clip['Xmax']) $this->clip['Xmax']=$x;
         if($y>$this->clip['Ymax']) $this->clip['Ymax']=$y;
     }
-    
     
     protected function printMFHAResolution($mfha)
     {

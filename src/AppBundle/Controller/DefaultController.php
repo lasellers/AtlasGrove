@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use AtlasGrove\Tigerline as Tigerline;
-use AtlasGrove\Utils as Utils;
+use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
 
 use AppBundle\Menu\Builder as MenuBuilder;
 
@@ -22,14 +22,14 @@ class DefaultController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-      // $menu =$this->get('knp_menu.menu_provider')->get('main');
-    //  $menu=MenuBuilder.createMainMenu();
-
+        // $menu =$this->get('knp_menu.menu_provider')->get('main');
+        //  $menu=MenuBuilder.createMainMenu();
+        
         return $this->render('default/index.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
-    //   'menu'=>$menu
+        //   'menu'=>$menu
         ]);
     }
     
@@ -43,7 +43,7 @@ class DefaultController extends Controller
         );
     }
     
-
+    
     /**
     * @Route("/map/states", name="map_states")
     */
@@ -51,16 +51,16 @@ class DefaultController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getMapList('states');
+        $obj=$tigerline->getMapList('states');
         $maps=$obj['records'];
         
         return $this->render('default/map.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'maps' => $maps,
-        'map_path'=> $util->tigerline->getMapPath(),
-        'map_base'=> 'map/'
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> '/map/'
         ]);
     }
     
@@ -72,16 +72,16 @@ class DefaultController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getMapList('counties');
+        $obj=$tigerline->getMapList('counties');
         $maps=$obj['records'];
         
         return $this->render('default/map.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'maps' => $maps,
-        'map_path'=> $util->tigerline->getMapPath(),
-        'map_base'=> 'map/'
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> '/map/'
         ]);
     }
     
@@ -94,20 +94,42 @@ class DefaultController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getMapList('roi');
+        $obj=$tigerline->getMapList('roi');
         $maps=$obj['records'];
         
         return $this->render('default/map.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'maps' => $maps,
-        'map_path'=> $util->tigerline->getMapPath(),
-        'map_base'=> 'map/'
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> '/map/'
         ]);
     }
     
+        
     
+    /**
+    * @Route("/map/steps", name="map_steps")
+    */
+    public function mapROIStepsAction(Request $request)
+    {
+        $logger = $this->get('logger');
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
+        $obj=$tigerline->getMapList('steps');
+        $maps=$obj['records'];
+        
+        return $this->render('default/map.html.twig', [
+        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
+        'maps' => $maps,
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> '/map/steps/'
+        ]);
+    }
+    
+
     /**
     * @Route("/map/roads/counties", name="map_roads_counties")
     */
@@ -115,15 +137,15 @@ class DefaultController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getMapList('roads');
+        $obj=$tigerline->getMapList('roads');
         $maps=$obj['records'];
         
         return $this->render('default/maps.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'maps' => $maps,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }

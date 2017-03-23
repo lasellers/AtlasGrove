@@ -22,7 +22,7 @@ class TigerlineCache extends Tigerline
     protected $roi;
     protected $clip;
     
-    public function __construct($container,SymfonyStyle $io)
+    public function __construct($container,SymfonyStyle $io=null)
     {
         parent::__construct($container,$io);
         
@@ -258,6 +258,7 @@ class TigerlineCache extends Tigerline
         
     }
     
+
     
     public function cacheShape(int $id,bool $force=false): bool
     {

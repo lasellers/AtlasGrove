@@ -33,7 +33,7 @@ class TigerlineDownload extends Tigerline
     private $state;
     
     
-    public function __construct($container,SymfonyStyle $io)
+    public function __construct($container,SymfonyStyle $io=null)
     {
         parent::__construct($container,$io);
     }

@@ -11,6 +11,7 @@ parameters:
     image_logo: true
     cache_precision: 0
     cache_nodups: 0
+    cache_stored_outside_project: 1
 
     color_background: 0xe0e0e0 # 0xffffff
     color_foreground: 0x000000

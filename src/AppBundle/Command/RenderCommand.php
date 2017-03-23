@@ -21,22 +21,26 @@ class RenderCommand extends ContainerAwareCommand
         $this->setName('atlasgrove:render');
         $this->setDescription('draws map');
         
-        $this->addArgument('id', InputArgument::OPTIONAL); //ie 47, 47007, etc
+        $this->addArgument('id', InputArgument::OPTIONAL,'id or x1,y1,x2,y2'); //ie 47, 47007, etc
         
         $this->addOption('force', null, InputOption::VALUE_NONE,'If set, uses force');
         
         $this->addOption('width',null, InputOption::VALUE_REQUIRED, 'If set, uses width');
         $this->addOption('height',null, InputOption::VALUE_REQUIRED, 'If set, uses height');
         
+        $this->addOption('vga',null, InputOption::VALUE_NONE, 'If set, uses vga');
         $this->addOption('1080p',null, InputOption::VALUE_NONE, 'If set, uses 1080p');
         $this->addOption('4k',null, InputOption::VALUE_NONE, 'If set, uses 4k');
         $this->addOption('8k',null, InputOption::VALUE_NONE, 'If set, uses 8k');
         $this->addOption('16k',null, InputOption::VALUE_NONE, 'If set, uses 16k');
         
+        $this->addOption('steps',null, InputOption::VALUE_NONE, 'If set, ...');
+        $this->addOption('roads',null, InputOption::VALUE_NONE, 'If set, ...');
+        
         $this->addOption('aspect',null, InputOption::VALUE_REQUIRED, 'If set, uses None,Width,Height');
         $this->addOption('lod',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         $this->addOption('region',null, InputOption::VALUE_REQUIRED, 'If set, ...');
-        $this->addOption('roi',null,InputOption::VALUE_REQUIRED,'If set, uses ROI:x1,y1,x2,y2');
+        $this->addOption('roi',null,InputOption::VALUE_NONE,'If set, ...');
         $this->addOption('test',null,InputOption::VALUE_REQUIRED,'If set, ...');
         
         $this->addOption('all',null, InputOption::VALUE_NONE, 'If set, ...');
@@ -74,7 +78,11 @@ class RenderCommand extends ContainerAwareCommand
             $render->setHeight($height);
         }
         
-        if($input->getOption('1080p')) {
+        if($input->getOption('vga')) {
+            $render->setHeight(640);
+            $render->setWidth(480);
+        }
+        else if($input->getOption('1080p')) {
             $render->setHeight(1080);
             $render->setWidth(1920);
         }
@@ -86,10 +94,10 @@ class RenderCommand extends ContainerAwareCommand
             $render->setHeight(4320);
             $render->setWidth(7680);
         }
-        /* else if($input->getOption('16k')) {
-        $render->setHeight(4320*2);
-        $render->setWidth(7680*2);
-        }*/
+        else if($input->getOption('16k')) {
+            $render->setHeight(4320*2);
+            $render->setWidth(7680*2);
+        }
         
         $aspect = $input->getOption('aspect');
         if(strlen($aspect)>0) {
@@ -106,116 +114,132 @@ class RenderCommand extends ContainerAwareCommand
             $render->setRegionType($region);
         }
         
+        if($input->getOption('steps')) {
+            $render->setSteps(true);
+        }
+        if($input->getOption('roads')) {
+            $render->setDataLayers(['roads']);
+        }
         //
-        if($input->getOption('roi')>0) {
-            $roi = $input->getOption('roi');
-            if(strlen($roi)>0) {
-                $a=explode(",",$roi);
-                $records=$render->renderShapeROI([
-                'Xmin'=> $a[0],
-                'Ymin'=> $a[1],
-                'Xmax'=> $a[2],
-                'Ymax'=> $a[3]
-                ]);
-            }
+        if(strlen($input->getOption('test'))>0) {
             
-        } else if($input->getOption('test')>0) {
-            $test = $input->getOption('test');
-            if(strlen($test)>0) {
+            switch($input->getOption('test')) {
+                case "all":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -130,
+                    'Ymin'=> 20,
+                    'Xmax'=>-70,
+                    'Ymax'=> 50
+                    ]);
+                    break;
                 
-                switch($test) {
-                    case "all":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -130,
-                        'Ymin'=> 20,
-                        'Xmax'=>-70,
-                        'Ymax'=> 50
-                        ]);
-                        break;
+                case "us":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -130,
+                    'Ymin'=> 20,
+                    'Xmax'=>-70,
+                    'Ymax'=> 50
+                    ]);
+                    break;
+                
+                case "etn":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924+.4,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.4
+                    ]);
+                    break;
+                
+                case "tn":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -90.31029799999999,
+                    'Ymin'=> -81.6469,
+                    'Xmax'=>-81.6469,
+                    'Ymax'=> 36.678118
+                    ]);
+                    break;
+                
+                case "lod0":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.3
+                    ]);
+                    break;
+                
+                case "narrow":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -85-.5+.2+.1,
+                    'Ymin'=> 34.982924+.4,
+                    'Xmax'=>-81-.5-.2,
+                    'Ymax'=> 36.678118+.4
+                    ]);
+                    break;
+                
+                case "blank":
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> -100,
+                    'Ymin'=> 60,
+                    'Xmax'=>-100,
+                    'Ymax'=> 60
+                    ]);
+                    break;
+                
+                default:
                     
-                    case "us":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -130,
-                        'Ymin'=> 20,
-                        'Xmax'=>-70,
-                        'Ymax'=> 50
-                        ]);
-                        break;
-                    
-                    case "etn":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -85-.5+.2+.1,
-                        'Ymin'=> 34.982924+.4,
-                        'Xmax'=>-81-.5-.2,
-                        'Ymax'=> 36.678118+.4
-                        ]);
-                        break;
-                    
-                    case "tn":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -90.31029799999999,
-                        'Ymin'=> -81.6469,
-                        'Xmax'=>-81.6469,
-                        'Ymax'=> 36.678118
-                        ]);
-                        break;
-                    
-                    case "lod0":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -85-.5+.2+.1,
-                        'Ymin'=> 34.982924,
-                        'Xmax'=>-81-.5-.2,
-                        'Ymax'=> 36.678118+.3
-                        ]);
-                        break;
-                    
-                    case "narrow":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -85-.5+.2+.1,
-                        'Ymin'=> 34.982924+.4,
-                        'Xmax'=>-81-.5-.2,
-                        'Ymax'=> 36.678118+.4
-                        ]);
-                        break;
-                    
-                    case "blank":
-                        $records=$render->renderShapeROI([
-                        'Xmin'=> -100,
-                        'Ymin'=> 60,
-                        'Xmax'=>-100,
-                        'Ymax'=> 60
-                        ]);
-                        break;
-                    
-                    default:
-                }
             }
             
         } else if($input->getOption('states',false)||$input->getOption('all',false)) {
             $io->title('Render States Shapes');
             $files=$cache->cacheStatesList();
-            $render->renderShapes($files,$force);
+            $render->renderShapes($files);
         }
         
         else if($input->getOption('counties',false)||$input->getOption('all',false)) {
             $io->title('Render Counties Shapes');
             $files=$cache->cacheCountiesList();
-            $render->renderShapes($files,$force);
+            $render->renderShapes($files);
         }
         
-        else if($id>0) {
-            $io->title("Cache Id {$id}");
-            $render->renderShape($id,$force);
-            //  $io->table(['id','county','full'],$records);
+        else if(strlen($id)>0) {
+            echo $id."\n";
+            if(is_numeric($id)) {
+                echo $id."\n";
+                $roi = $input->getOption('roi');
+                echo $roi."\n";
+                if($roi) {
+                    $io->title("Cache Id {$id} ROI");
+                    $render->renderShapeFromROI($id);
+                } else {
+                    $io->title("Cache Id {$id}");
+                    $render->renderShape($id);
+                }
+                
+            }
+            else {
+                
+                $a=explode(",",$id);
+                if(count($a)==4) {
+                    $records=$render->renderShapeROI([
+                    'Xmin'=> $a[0],
+                    'Ymin'=> $a[1],
+                    'Xmax'=> $a[2],
+                    'Ymax'=> $a[3]
+                    ]);
+                }
+            }
+            
         }
         else {
             $io->title('Render all');
             
             $files=$cache->cacheStatesList();
-            $render->renderShapes($files,$force);
+            $render->renderShapes($files);
             
             $files=$cache->cacheCountiesList();
-            $render->renderShapes($files,$force);
+            $render->renderShapes($files);
         }
         
     }

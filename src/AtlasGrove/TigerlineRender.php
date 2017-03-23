@@ -23,10 +23,12 @@ class TigerlineRender extends Tigerline
     private $lastShape='';
     
     private $thickness;
+    private $steps;
+    
     private $fonts;
     private $font;
     
-    public function __construct($container,SymfonyStyle $io)
+    public function __construct($container,SymfonyStyle $io=null)
     {
         parent::__construct($container,$io);
         
@@ -67,7 +69,6 @@ class TigerlineRender extends Tigerline
         return $this->container->getParameter('image_logo',$state==true);
     }
     
-    
     private function getColor(string $type)
     {
         return $this->container->getParameter('color_'.$type);
@@ -77,15 +78,14 @@ class TigerlineRender extends Tigerline
         return $this->container->getParameter('color_'.$type,$number);
     }
     
-    
-    /*  public function setROI(array $roi=[])
-    {
-    $this->cull=$cull;
-    }
-    */
     public function setThickness(int $thickness=0)
     {
         $this->thickness=$thickness>1?$thickness:1;
+    }
+    
+    public function setSteps(bool $state=false)
+    {
+        $this->steps=$state;
     }
     
     public function setForce(bool $state=false)
@@ -145,6 +145,14 @@ class TigerlineRender extends Tigerline
         $this->regionType=in_array($type,$this->regionTypes)?$type:$this->regionTypes[0];
     }
     
+    private $dataLayer;
+    private $dataLayers=["Road","Water","Area","Landmark"];
+    public function setDataLayers(string $type=null)
+    {
+        $type = UCWords(strtolower($type));
+        $this->dataLayer=in_array($type,$this->dataLayers)?$type:$this->dataLayers[0];
+    }
+    
     private $stats;
     public function resetstats()
     {
@@ -175,6 +183,10 @@ class TigerlineRender extends Tigerline
         );
     }
     
+    public function renderShapeFromROI($id) {
+        $roi=$this->getROIFromId($id);
+        $this->renderShapeROI($roi);
+    }
     
     //
     public function renderShape($id) {
@@ -230,7 +242,8 @@ class TigerlineRender extends Tigerline
                 $records[]=$id;
             }
         }
-        
+        //sort so that states are rendered before county details
+        sort($records);
         return $records;
     }
     
@@ -250,10 +263,7 @@ class TigerlineRender extends Tigerline
                     
                     $this->roi=json_decode(trim(fgets($in)),TRUE);
                     $this->arrayToFloat($this->roi);
-                    
-                    if(
-                    $this->boundingBoxOverlap($this->roi)
-                    ) {
+                    if(!$this->boundingBoxCulled($this->roi)) {
                         $idsInBounds[]=$id;
                     }
                 }
@@ -268,8 +278,18 @@ class TigerlineRender extends Tigerline
         return $idsInBounds;
     }
     
-    public function getROIsToROI(array $ids) {
-        
+    public function cacheIdToFilename(int $id): string
+    {
+        $file=parent::cacheIdToFilename($id);
+        $tigerlineCache = new TigerlineCache($this->container,$this->io);
+        if($tigerlineCache)
+        {
+            $tigerlineCache->cacheShape($id);
+        }
+        return $file;
+    }
+    
+    public function getROIsToROI(array $ids): array {
         //1
         $this->rois=[];
         
@@ -285,10 +305,7 @@ class TigerlineRender extends Tigerline
                     
                     $roi=json_decode(trim(fgets($in)),TRUE);
                     $this->arrayToFloat($roi);
-                    
-                    if(
-                    $this->boundingBoxOverlap($roi)
-                    ) {
+                    if(!$this->boundingBoxCulled($roi)) {
                         $this->rois=array_merge([$roi],$this->rois,json_decode(trim(fgets($in)),TRUE));
                     }
                 }
@@ -330,7 +347,31 @@ class TigerlineRender extends Tigerline
         $this->clip['Ymin']=$inclusiveRoi['Ymin'];
         $this->clip['Xmax']=$inclusiveRoi['Xmax'];
         $this->clip['Ymax']=$inclusiveRoi['Ymax'];
-        // return $inclusiveRoi;
+        
+        return $this->clip;
+    }
+    
+    private function getROIFromId($id): array
+    {
+        $cacheFilename=$this->cacheIdToFilename($id);
+        
+        $in = fopen($cacheFilename, "rb");
+        if($in)
+        {
+            try {
+                $version = trim(fgets($in));
+                
+                $roi=json_decode(trim(fgets($in)),TRUE);
+                $this->arrayToFloat($roi);
+            }
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
+            {
+                $this->logger->error($e->getMessage());
+            }
+            fclose($in);
+        }
+        
+        return $roi;
     }
     
     protected $cull;
@@ -339,60 +380,34 @@ class TigerlineRender extends Tigerline
         $this->cull=$cull;
     }
     
-    /*
-    protected function pointBounded(float $x, float $y): bool
-    {
-    if(
-    $this->inBounds($x,$this->cull['Xmin'],$this->cull['Xmax']) &&
-    $this->inBounds($y,$this->cull['Ymin'],$this->cull['Ymax'])
-    )    return true;
-    }
-    
-    $this->stats['points culled']++;
-    return false;
-    }*/
-    
     protected function inBounds(float $number, float $min, float $max): bool
     {
         return ($min<=$number && $number<=$max);
     }
     
-    protected function boundingBoxOverlap(array $bound): bool
+    protected function boundingBoxCulled(array $bound): bool
     {
-        if(
-        (
-        ($this->inBounds($bound['Xmin'],$this->cull['Xmin'],$this->cull['Xmax'])) ||
-        ($this->inBounds($bound['Xmax'],$this->cull['Xmin'],$this->cull['Xmax']))
-        ) && (
-        ($this->inBounds($bound['Ymin'],$this->cull['Ymin'],$this->cull['Ymax'])) ||
-        ($this->inBounds($bound['Ymax'],$this->cull['Ymin'],$this->cull['Ymax']))
-        )
-        ) {
-            $this->stats['roi bounding box culled']++;
-            return true;
+        if(count($bound)==4)
+        {
+            if(
+            (
+            ($this->inBounds($bound['Xmin'],$this->cull['Xmin'],$this->cull['Xmax'])) ||
+            ($this->inBounds($bound['Xmax'],$this->cull['Xmin'],$this->cull['Xmax']))
+            ) && (
+            ($this->inBounds($bound['Ymin'],$this->cull['Ymin'],$this->cull['Ymax'])) ||
+            ($this->inBounds($bound['Ymax'],$this->cull['Ymin'],$this->cull['Ymax']))
+            )
+            ) {
+                return false;
+            }
         }
-        return false;
+        $this->stats['roi bounding box culled']++;
+        return true;
     }
-    
-    /*
-    protected function boundingBoxesCulled(array $bounds): bool
-    {
-    foreach($bounds as $bound)
-    {
-    if(!$this->boundingBoxOverlap($bound)) {
-    return false;
-    }
-    }
-    
-    $this->stats['roi bounding boxes culled']++;
-    return true;
-    }
-    */
-    
     
     private function boundingBoxToPartialFilename(array $bound)
     {
-        return $bound['Xmin'].'.'.$bound['Ymin'].'.'.$bound['Xmax'].'.'.$bound['Ymax'];
+        return $bound['Xmin'].','.$bound['Ymin'].','.$bound['Xmax'].','.$bound['Ymax'];
     }
     
     //renderShapeROI
@@ -400,6 +415,7 @@ class TigerlineRender extends Tigerline
         $this->cull=$cull;
         
         //
+        $this->clip=$cull;
         $this->clip['width']=$this->width;
         $this->clip['height']=$this->height;
         
@@ -411,7 +427,7 @@ class TigerlineRender extends Tigerline
         if($im !== FALSE)
         {
             $cachedIds=$this->cullCachedShapedIDs($this->getCachedShapeIDs());
-            $this->getROIsToROI($cachedIds);
+            $this->clip=$this->getROIsToROI($cachedIds);
             
             $this->stats['regions']=count($cachedIds);
             $this->stats['region ids']=implode(',',$cachedIds);
@@ -428,7 +444,9 @@ class TigerlineRender extends Tigerline
             $tigerlineCache = new TigerlineCache($this->container,$this->io);
             if($tigerlineCache)
             {
-                // $step=1;
+                if($this->steps) {
+                    $step=1;
+                }
                 foreach($cachedIds as $id) {
                     $this->io->section("Render shape {$id} to {$imageFilename}");
                     
@@ -438,11 +456,20 @@ class TigerlineRender extends Tigerline
                     
                     $this->renderImageFromROICache($im,$cacheFilename,$imageFilename);
                     
-                    // imagepng($im,$imageFilename.".$step.png",$this->getImageQuality()); //temp
-                    //  $step++;
-                    
-                    // $this->logger->debug("Wrote step image $imageFilename");
-                    // $this->io->note(">>>> Wrote step image $imageFilename");
+                    if($this->steps) {
+                        $stepImageFolder=$this->getMapPath()."/steps/";
+                        $this->checkPath($stepImageFolder);
+                        $stepImageFilename=$stepImageFolder."/{$partialImageFilename}_{$step}.png";
+                        if(file_exists($stepImageFilename)&&$this->force==false) {
+                            return;
+                        }
+                        
+                        imagepng($im,$stepImageFilename,$this->getImageQuality()); //temp
+                        $step++;
+                        
+                        $this->logger->debug("Wrote step image $stepImageFilename");
+                        $this->io->note(">>>> Wrote step image $stepImageFilename");
+                    }
                 }
             }
             
@@ -539,10 +566,7 @@ class TigerlineRender extends Tigerline
         }
     }
     
-    
     // *****************************************************************************
-    
-    
     
     private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     {
@@ -963,6 +987,7 @@ private function renderShapePolygon($im, array $a, $linecolor, $fillcolor)
     imagepolygon($im, $a, count($a)/2, $linecolor);
 }
 
+//todo: move colors to parameters and a state-optional color code?
 private function getTextColorByType($im,string $type,$alpha=50)
 {
     switch($type)

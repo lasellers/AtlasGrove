@@ -8,7 +8,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use AtlasGrove\Tigerline as Tigerline;
-use AtlasGrove\Utils as Utils;
+use AtlasGrove\TigerlineDownloads as TigerlineDownloads;
+
+use AppBundle\Menu\Builder as MenuBuilder;
 
 class AdminController extends Controller
 {
@@ -18,11 +20,9 @@ class AdminController extends Controller
     public function indexAction(Request $request)
     {
         $logger = $this->get('logger');
-
-        /*
-        return new Response(
-        '<html><body>home route</body></html>'
-        );*/
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
         // replace this example code with whatever you need
         return $this->render('default/admin/index.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
@@ -38,23 +38,23 @@ class AdminController extends Controller
         '<html><body>user About route</body></html>'
         );
     }
-
-            /**
+    
+    /**
     * @Route("/admin/raw/years", name="raw_years")
     */
     public function rawYearsAction(Request $request)
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getCacheYears();
+        $obj=$tigerline->getCacheYears();
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }
@@ -66,15 +66,15 @@ class AdminController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getCacheStates();
+        $obj=$tigerline->getCacheStates();
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }
@@ -86,15 +86,15 @@ class AdminController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getCacheCounties();
+        $obj=$tigerline->getCacheCounties();
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }
@@ -106,15 +106,15 @@ class AdminController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getCacheCounties();
+        $obj=$tigerline->getCacheCounties();
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }
@@ -127,15 +127,15 @@ class AdminController extends Controller
     {
         $logger = $this->get('logger');
         
-        $util=new Utils($this->container);
+        $tigerline=new TigerlineDownloads($this->container);
         
-        $obj=$util->getCacheFiles();
+        $obj=$tigerline->getCacheFiles();
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
-        'map_path'=> $util->tigerline->getMapPath(),
+        'map_path'=> $tigerline->getMapPath(),
         'map_base'=> 'map/'
         ]);
     }

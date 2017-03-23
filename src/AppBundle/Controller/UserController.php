@@ -18,13 +18,7 @@ class UserController extends Controller
     public function indexAction(Request $request)
     {
         $logger = $this->get('logger');
-        $logger->info(__FUNCTION__);
-        $logger->info(__CLASS__);
-        $logger->err(__CLASS__);
-        /*
-        return new Response(
-        '<html><body>home route</body></html>'
-        );*/
+
         // replace this example code with whatever you need
         return $this->render('default/user/index.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
