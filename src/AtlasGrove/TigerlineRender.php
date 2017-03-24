@@ -1,6 +1,6 @@
 <?php
 namespace AtlasGrove;
-
+//todo: refactor for clarity and conistency, et. add "tiles".  add SVG output option. move colors out of code to yaml parameters. add data layer selection.
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -1058,7 +1058,6 @@ private function getLineColorByType($im,string $type,$alpha=0)
 
 private function getFillColorByType($im,string $type,$alpha=70)
 {
-    //    echo "type=$type\n";
     switch($type)
     {
         case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);

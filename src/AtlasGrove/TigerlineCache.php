@@ -1,5 +1,6 @@
 <?php
 namespace AtlasGrove;
+// too: refactor for consistency and error handling. remove precision? add better checks for file integrity. remove old bloat. add "us" level to cache.
 
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -132,7 +133,7 @@ class TigerlineCache extends Tigerline
         return $number;
     }
     
-    protected function setShapePoly(float $lat=0,float $lon=0,string $shape='')
+    protected function setShapePoly(float $lat=0, float $lon=0, string $shape='')
     {
         $this->lastLat=$lat;
         $this->lastLon=$lon;
@@ -143,7 +144,7 @@ class TigerlineCache extends Tigerline
     //
     private function correctTextAbbreviations(string $text): string
     {
-        $abbr=array(
+        $abbr=[
         'Rd'=>'Road',
         'Frk'=>'Fork',
         'Ln'=>'Lane',
@@ -169,7 +170,7 @@ class TigerlineCache extends Tigerline
         'Byp'=>'By-pass',
         'Pkwy'=>'Park-way',
         'Expwy'=>'Express-way'
-        );
+        ];
         
         $text=trim($text);
         if($text=='') return "";
@@ -184,8 +185,7 @@ class TigerlineCache extends Tigerline
         }
         return implode(' ',$a);
     }
-    //
-    
+   
     
     public function cacheShapes(array $files,bool $force=false)
     {
@@ -194,11 +194,8 @@ class TigerlineCache extends Tigerline
             list($id)=explode("\t",$file);
             $this->cacheShape($id,$force);
         }
-        
     }
-    
-    
-    
+ 
     public function cacheShape(int $id,bool $force=false): bool
     {
         $cacheFilename=$this->cacheIdToFilename($id);
@@ -229,6 +226,7 @@ class TigerlineCache extends Tigerline
             
             foreach($files as $file)
             {
+                // note: refactor here
                 // list($mfha,$mfhaRecords)=$this->cacheGetShapefile($file['dbf']);
                 
                 //mfha mfharecords
@@ -246,6 +244,7 @@ class TigerlineCache extends Tigerline
             $this->io->note("Wrote $cacheFilename.");
         }
         
+        // note: move to func
         // rewrite lines 3 and 4
         $lines=explode("\n",file_get_contents($cacheFilename));
         $lines[2]=json_encode($this->rois);
@@ -356,7 +355,7 @@ class TigerlineCache extends Tigerline
                 $binarydata = fread($shpHandle, 4);
                 $rc = unpack("IShapeType",$binarydata);
                 
-                //
+                // i h p r t
                 if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
                 $type2='i';
                 else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
@@ -418,8 +417,6 @@ class TigerlineCache extends Tigerline
         
         $binarydata = fread($handle, 40);
         $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
-        
-        //printMFHAResolution($h);
         
         $pos=ftell($handle);
         
@@ -512,8 +509,6 @@ protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,
     
     $binarydata = fread($handle, 40);
     $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
-    
-    //printMFHAResolution($h);
     
     $pos=ftell($handle);
     
@@ -684,21 +679,12 @@ protected function cacheOutPolygon(float $x,float $y)
 
 /**
 */
-public function cacheStatesList(string $filter="") {
-    
-    $this->output_filename="states_list.txt";
-    
-    $finder = new Finder();
-    
+public function cacheStatesList() {
     $records=[];
     
     // get list of county folders
-    //////  if($filter=="") {
+    $finder = new Finder();
     $finder->directories()->depth(" == 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getRootDataPath()."/".$this->getYearFolder()."/");
-    //}
-    // else {
-    ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
-    //}
     foreach ($finder as $dir) {
         $state_folder=$dir->getRelativePathname();
         
@@ -709,11 +695,9 @@ public function cacheStatesList(string $filter="") {
         // fe_2007_47_county.dbf
         $records[]=$statefp."\t".$state_folder."\t".$state;
     }
-    
-    file_put_contents(
-    $this->getDataCachePath()."/".$this->output_filename,
-    implode("\n",$records)
-    );
+
+    //
+    file_put_contents($this->getDataCachePath()."/list.states.txt",implode("\n",$records));
     
     //
     return $records;
@@ -722,21 +706,12 @@ public function cacheStatesList(string $filter="") {
 
 /**
 */
-public function cacheCountiesList(string $filter="") {
-    
-    $this->output_filename="counties_list.txt";
-    
-    $finder = new Finder();
-    
+public function cacheCountiesList() {
     $records=[];
     
     // get list of county folders
-    //////  if($filter=="") {
+    $finder = new Finder();
     $finder->directories()->depth("== 0")->path("/^[\d]{2,2}_(.*)/")->in($this->getDataPath());
-    //}
-    // else {
-    ////     $finder->directories()->depth("== 0")->path("/^[\d]{2}_(.*)/")->in($this->cacheDir);
-    //}
     foreach ($finder as $dir) {
         $state_folder=$dir->getRelativePathname();
         
@@ -758,11 +733,9 @@ public function cacheCountiesList(string $filter="") {
             }
         }
     }
-    
-    file_put_contents(
-    $this->getDataCachePath()."/".$this->output_filename,
-    implode("\n",$records)
-    );
+
+    //    
+    file_put_contents($this->getDataCachePath()."/list.counties.txt",implode("\n",$records));
     
     //
     return $records;
@@ -979,7 +952,6 @@ public function getShx($shxFilename): array
             "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
             $binarydata);
             //  print_shapefile_contents_mainheader($mfha);
-            // printMFHAResolution($mfha);
             
             $count=0;
             $pos=ftell($handle);

@@ -20,8 +20,7 @@ class CacheCommand extends ContainerAwareCommand
         $this->setName('atlasgrove:cache');
         $this->setDescription('lists AtlasGrove cached tigerline files');
         
-        $this->addArgument('id', InputArgument::OPTIONAL,"id filter");
-        $this->addArgument('filter', InputArgument::OPTIONAL,"path filter");
+        $this->addArgument('id', InputArgument::OPTIONAL,"id");
         
         $this->addOption('force', null, InputOption::VALUE_NONE,'If set, uses force');
         
@@ -44,7 +43,6 @@ class CacheCommand extends ContainerAwareCommand
         $tigerline=new TigerlineCache($this->getContainer(),$io);
         
         $id = $input->getArgument('id')?:"";
-        $filter = $input->getArgument('filter')?:"";
         
         $force = $input->getOption('force',false)?true:false;
         $io->note('Force '.($force?"YES":"NO"));
