@@ -122,7 +122,7 @@ class TigerlineCache extends Tigerline
         return $this->container->getParameter('cache_nodups',$number);
     }
     
-    //
+    // why?
     protected function clipPrecision(float $number): float
     {
         $precision=$this->getCachePrecision();
