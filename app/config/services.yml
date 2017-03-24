@@ -4,7 +4,6 @@ parameters:
     #parameter_name: value
     web_dir: "%kernel.root_dir%/../web"
     map_dir: "%kernel.root_dir%/../web/map"
-    # output_dir: "%kernel.root_dir%/../web/output"
     cache_ttl: 600
     image_quality: 9
     image_compressed: 0
@@ -13,11 +12,12 @@ parameters:
     cache_nodups: 0
     cache_stored_outside_project: 1
 
+    color_logo: 0x30402080
     color_background: 0xe0e0e0 # 0xffffff
     color_foreground: 0x000000
-    color_clip_box: 0xff0000
-    color_roi_box: 0xffff00
-    color_logo: 0x30402080
+    color_clip_box: 0xffe0e0
+    color_roi_box: 0xffffe0
+    color_select_box: 0xe0e0ff
 
 services:
     #app.menu_builder:

@@ -254,12 +254,12 @@ class TigerlineCache extends Tigerline
         
         if(!file_exists($dbfFilename))
         {
-            $this->io->error("Could not find file $dbfFilename.");
+           // $this->io->error("Could not find file $dbfFilename.");
             return;
         }
         if(!file_exists($shpFilename))
         {
-            $this->io->error("Could not find file $shpFilename.");
+            // $this->io->error("Could not find file $shpFilename.");
             return;
         }
         

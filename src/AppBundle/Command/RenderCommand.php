@@ -35,7 +35,8 @@ class RenderCommand extends ContainerAwareCommand
         $this->addOption('16k',null, InputOption::VALUE_NONE, 'If set, uses 16k');
         
         $this->addOption('steps',null, InputOption::VALUE_NONE, 'If set, ...');
-        $this->addOption('roads',null, InputOption::VALUE_NONE, 'If set, ...');
+        
+        $this->addOption('layers',null, InputOption::VALUE_REQUIRED, 'If set, ...');
         
         $this->addOption('aspect',null, InputOption::VALUE_REQUIRED, 'If set, uses None,Width,Height');
         $this->addOption('lod',null, InputOption::VALUE_REQUIRED, 'If set, ...');
@@ -117,8 +118,9 @@ class RenderCommand extends ContainerAwareCommand
         if($input->getOption('steps')) {
             $render->setSteps(true);
         }
-        if($input->getOption('roads')) {
-            $render->setDataLayers(['roads']);
+        if($input->getOption('layers')) {
+            $layers=$input->getOption('layers');
+            $render->setDataLayers($layers);
         }
         //
         if(strlen($input->getOption('test'))>0) {

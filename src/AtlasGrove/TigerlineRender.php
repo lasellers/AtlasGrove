@@ -145,12 +145,45 @@ class TigerlineRender extends Tigerline
         $this->regionType=in_array($type,$this->regionTypes)?$type:$this->regionTypes[0];
     }
     
-    private $dataLayer;
-    private $dataLayers=["Road","Water","Area","Landmark"];
+    private $validTypes="";
     public function setDataLayers(string $type=null)
     {
-        $type = UCWords(strtolower($type));
-        $this->dataLayer=in_array($type,$this->dataLayers)?$type:$this->dataLayers[0];
+        if($type==''|| 0 == strcasecmp($type,'All'))
+        {
+            $this->validTypes=['A','M','W','E','r','t','h','i','p','C','P'];
+            return;
+        }
+        
+        //
+        $this->validTypes=[];
+        
+        $types=explode(",",$type);
+        foreach($types as $type)
+        {
+            $type = UCWords(strtolower(trim($type)));
+            
+            switch($type) {
+                case 'Road':
+                    $valids=['r','h','i','p'];
+                    break;
+                case 'Rail':
+                    $valids=['t'];
+                    break;
+                case 'Water':
+                    $valids=['W'];
+                    break;
+                case 'Area':
+                    $valids=['A','E'];
+                    break;
+                case 'Landmark':
+                    $valids=['C','P'];
+                    break;
+                default:
+                    $valids=[];
+            }
+            
+            $this->validTypes=array_merge($this->validTypes,$valids);
+        }
     }
     
     private $stats;
@@ -163,9 +196,10 @@ class TigerlineRender extends Tigerline
         'text'=>0,
         'rejected text'=>0,
         'point'=>0,
-        'line'=>0,
-        'polyline'=>0,
-        'polygon'=>0,
+        'points'=>0,
+        'lines'=>0,
+        'polylines'=>0,
+        'polygons'=>0,
         'box'=>0,
         'points culled'=>0,
         'roi bounding box culled'=>0,
@@ -410,7 +444,7 @@ class TigerlineRender extends Tigerline
         return $bound['Xmin'].','.$bound['Ymin'].','.$bound['Xmax'].','.$bound['Ymax'];
     }
     
-    //renderShapeROI
+    //
     public function renderShapeROI(array $cull) {
         $this->cull=$cull;
         
@@ -570,7 +604,6 @@ class TigerlineRender extends Tigerline
     
     private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     {
-        
         //
         $this->logger->info("renderImageFromSingleCache: $cacheFilename to $imageFilename");
         
@@ -706,10 +739,7 @@ class TigerlineRender extends Tigerline
     }
     
     
-    
-    
     //
-    
     private function renderImageFromCacheInner($im,$in,$imageFilename)
     {
         //
@@ -725,13 +755,11 @@ class TigerlineRender extends Tigerline
         imagesetthickness($im,1);
         $this->setThickness(10);
         
-        $clipbox_color=$this->getColor('clip_box');
-        $this->renderShapeBox($im,$this->clip['Xmin'],$this->clip['Ymin'],$this->clip['Xmax'],$this->clip['Ymax'],$clipbox_color);
+        $this->renderShapeBox($im,$this->clip['Xmin'],$this->clip['Ymin'],$this->clip['Xmax'],$this->clip['Ymax'],$this->getColor('clip_box'));
         
-        $roibox_color=$this->getColor('roi_box');
-        $this->renderShapeBox($im,$this->roi['Xmin'],$this->roi['Ymin'],$this->roi['Xmax'],$this->roi['Ymax'],$roibox_color);
+        $this->renderShapeBox($im,$this->roi['Xmin'],$this->roi['Ymin'],$this->roi['Xmax'],$this->roi['Ymax'],$this->getColor('roi_box'));
         
-        $this->setThickness();
+        $this->setThickness(1);
         
         //
         $text='';
@@ -761,402 +789,425 @@ class TigerlineRender extends Tigerline
             $linecolor=$this->getLineColorByType($im,$type);
             $fillcolor=$this->getFillColorByType($im,$type);
             
-            //$c=imagecolorallocatealpha($im,0,0,255,0);
-            //$this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$linecolor,$this->roi,$zoom,$this->height);
-            
-            // draw shape
-            $this->stats['shape']++;
-            
-            switch($shape)
+            //'A','M','W','E','r','t','h','i','p','C','P'
+            if($this->validTypes==''||in_array($type,$this->validTypes))
             {
-                //point 1
-                case '*':
-                    if(1==($count%2)) {
-                        $count--;
-                }
-                if(!($count>=0)) {
-                    throw \Symfony\Component\Debug\Exception\ContextErrorException("Point count {$count}.");
+               // $this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$this->getColor('select_box'));
+                
+                // draw shape
+                $this->stats['shape']++;
+                
+                switch($shape)
+                {
+                    //point 1
+                    case '*':
+                        $this->renderShapePoints($im,$a,$linecolor,$fillcolor);
+                        break;
+                    
+                    //3 line
+                    case 'L':
+                        $this->renderShapePolyline($im,$a,$linecolor,$fillcolor);
+                        break;
+                    
+                    case 'P': // polygon
+                        $this->renderShapePolygon($im,$a,$linecolor,$fillcolor);
+                        break;
+                    
+                    default:
+                        $this->logger->error("shape=$shape type=$type count=$count");
                 }
                 
-                for($i=0;$i<$count;$i+=2)
-                {
-                    $this->renderShapePoint($im,$a[$i],$a[$i+1],$linecolor);
+                // draw text
+                if(strlen($text)>0) {
+                    $this->renderText($im,$text,$textcolor,$select);
                 }
-                break;
-            
-            //3 line
-            case 'L':
-                if(!($count>=2)) {
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Polyline count {$count}.");
             }
-            
-            $this->stats['polyline']++;
-            
-            $lat1=$a[0]; $lon1=$a[0+1];
-            for($i=0;$i<$count;$i+=2)
-            {
-                $lat2=$a[$i]; $lon2=$a[$i+1];
-                $this->renderShapeThickline($im,$lat1,$lon1,$lat2,$lon2,$linecolor,$this->thickness);
-                $lat1=$lat2; $lon1=$lon2;
-            }
-            break;
+        }
         
-        case 'P': // polygon
+        //
+        if($this->getImageLogo())
+        {
+            $logo_color=$this->getColor('logo');
+            // color = imageColorAllocateAlpha($im, 48, 64, 32,90);
+            $size=(sqrt($this->width)/2.0); $angle=0; $x=0; $y = $this->clip['height']-$size;
+            imagettftext($im, $size, $angle, $x, $y, $logo_color, $this->font,
+            "Rendered ".date('r',time())." - US Census Data Tiger/Line {$this->yearfp} - $this->width x $this->height ($lines)"
+            );
+        }
+        
+    }
+    
+    
+    //
+    private function clipROI(array $a): array
+    {
+        $this->roi=[
+        'Xmin'=>null,
+        'Ymin'=>null,
+        'Xmax'=>null,
+        'Ymax'=>null,
+        ];
+        
+        $count=count($a);
+        if(($count%2)==1) { $count--; }
+        for($i=0;$i<$count;$i+=2)
+        {
+            $lat=$a[$i];
+            $lon=$a[$i+1];
             
-            if(!($count>=3)) {
+            if($this->roi['Xmin']==null || $lat<$this->roi['Xmin']) $this->roi['Xmin']=$lat;
+            if($this->roi['Ymin']==null || $lon<$this->roi['Ymin']) $this->roi['Ymin']=$lon;
+            if($this->roi['Xmax']==null || $lat>$this->roi['Xmax']) $this->roi['Xmax']=$lat;
+            if($this->roi['Ymax']==null || $lon>$this->roi['Ymax']) $this->roi['Ymax']=$lon;
+        }
+        
+        return $this->computeRegionMids($this->roi);
+    }
+    
+    
+    //
+    private function renderText($im,string $text,$fontcolor,array $select)
+    {
+        $text=trim($text);
+        if($text=='') return;
+        
+        $lat=(($select['Xmax']-$select['Xmin'])/2)+$select['Xmin'];
+        $lon=(($select['Ymax']-$select['Ymin'])/2)+$select['Ymin'];
+        
+        $w1=($this->clip['Xmax']-$this->clip['Xmin']);
+        $w2=($select['Xmax']-$select['Xmin']);
+        $fontsize = (($w2/$w1)*$this->clip['width'])*.1; //rand(3,30);
+        if($fontsize<2) {
+            $this->stats['rejected text']++;
+            return;
+        }
+        
+        $this->stats['text']++;
+        
+        $rotation=0; //rand(0,360);
+        
+        $a=imagettfbbox($fontsize, $rotation, $this->font, $text);
+        
+        //$dy=abs($a[6]-$a[1]);
+        //$this->logger->info("fs=".$this->fontsize);
+        
+        $x=(int)(($lat-$this->clip['Xmin'])*$this->clip['zoom']);
+        $y=(int)($this->clip['height']-($lon-$this->clip['Ymin'])*$this->clip['zoom']);
+        $x-=(($a[2]-$a[0])/2);
+        
+        //$this->logger->info("lat=$lat lon=$lon x=$x y=$y s=$this->fontsize r=$rotation ".$a[0]."-".$a[1]." text=$text");
+        // $this->io->note("lat=$lat lon=$lon x=$x y=$y s=$fontsize r=$rotation ".$a[0]."-".$a[1]." text=$text");
+        
+        $r=($fontcolor>>16)&255;
+        $g=($fontcolor>>8)&255;
+        $b=($fontcolor&255);
+        $textcolor = imageColorAllocateAlpha($im, $r, $g, $b,30);
+        
+        imagettftext($im, $fontsize, $rotation, $x, $y, $textcolor, $this->font, $text);
+    }
+    
+    
+    private function renderShapePoint($im,float $lat,float $lon, int $linecolor)
+    {
+        $this->stats['point']++;
+        
+        $x=(int)(($lat-$this->clip['Xmin'])*$this->clip['zoom']);
+        $y=(int)($this->clip['height']-($lon-$this->clip['Ymin'])*$this->clip['zoom']);
+        
+        imagesetpixel($im,$x,$y,$linecolor);
+    }
+    
+    
+    
+    
+    private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, float $lon2, int $linecolor)
+    {
+        $this->stats['box']++;
+        
+        $this->renderShapeLine($im,$lat1,$lon1,$lat2,$lon1,$linecolor);
+        $this->renderShapeLine($im,$lat1,$lon2,$lat2,$lon2,$linecolor);
+        $this->renderShapeLine($im,$lat1,$lon1,$lat1,$lon2,$linecolor);
+        $this->renderShapeLine($im,$lat2,$lon1,$lat2,$lon2,$linecolor);
+    }
+    
+    private function renderShapeLine($im, float $lat1, float $lon1, float $lat2,float $lon2, int $linecolor)
+    {
+        $this->stats['lines']++;
+        
+        if($lat1<$this->clip['Xmin'] && $lat2<$this->clip['Xmin']) return;
+        if($lat1>$this->clip['Xmax'] && $lat2>$this->clip['Xmax']) return;
+        
+        if($lon1<$this->clip['Ymin'] && $lon2<$this->clip['Ymin']) return;
+        if($lon1>$this->clip['Ymax'] && $lon2>$this->clip['Ymax']) return;
+        
+        $x1=(int)(($lat1-$this->clip['Xmin'])*$this->clip['zoom']);
+        $y1=(int)(($lon1-$this->clip['Ymin'])*$this->clip['zoom']);
+        $x2=(int)(($lat2-$this->clip['Xmin'])*$this->clip['zoom']);
+        $y2=(int)(($lon2-$this->clip['Ymin'])*$this->clip['zoom']);
+        imageline($im,$x1,$this->clip['height']-$y1,$x2,$this->clip['height']-$y2,$linecolor);
+    }
+    
+    private function renderShapeThickline($im,float $lat1,float $lon1,float $lat2,float $lon2,$linecolor,$thickness)
+    {
+        if($this->thickness<=1) {
+            return $this->renderShapeLine($im,$lat1,$lon1,$lat2,$lon2,$linecolor);
+        }
+        
+        $t=$this->thickness/2.0;
+        
+        $xa=(int)(($lat1-$this->clip['Xmin'])*$this->clip['zoom']);
+        $ya=(int)(($lon1-$this->clip['Ymin'])*$this->clip['zoom']);
+        $xb=(int)(($lat2-$this->clip['Xmin'])*$this->clip['zoom']);
+        $yb=(int)(($lon2-$this->clip['Ymin'])*$this->clip['zoom']);
+        
+        $a = (atan2(($yb - $ya), ($xb - $xa))); //radians
+        
+        $pi2=3.14159/2;
+        
+        $p[0]=                 $xa+(cos($a+$pi2)*$t);
+        $p[1]=$this->clip['height']-($ya+(sin($a+$pi2)*$t));
+        
+        $p[2]=                 $xa+(cos($a-$pi2)*$t);
+        $p[3]=$this->clip['height']-($ya+(sin($a-$pi2)*$t));
+        
+        $p[4]=                 $xb+(cos($a-$pi2)*$t);
+        $p[5]=$this->clip['height']-($yb+(sin($a-$pi2)*$t));
+        
+        $p[6]=                 $xb+(cos($a+$pi2)*$t);
+        $p[7]=$this->clip['height']-($yb+(sin($a+$pi2)*$t));
+        
+        imagefilledpolygon($im, $p, count($p)/2, $linecolor);
+    }
+    
+    private function renderShapePoints($im, array $a, int $linecolor)
+    {
+        $count=count($a);
+        
+        if(1==($count%2)) {
+            $count--;
+        }
+        if(!($count>=0)) {
+            throw \Symfony\Component\Debug\Exception\ContextErrorException("Point count {$count}.");
+        }
+        
+        $this->stats['points']++;
+        
+        for($i=0;$i<$count;$i+=2)
+        {
+            $this->renderShapePoint($im,$a[$i],$a[$i+1],$linecolor);
+        }
+    }
+    
+    private function renderShapePolyline($im, array $a, $linecolor, $fillcolor)
+    {
+        $count=count($a);
+        
+        if(!($count>=2)) {
+            throw \Symfony\Component\Debug\Exception\ContextErrorException("Polyline count {$count}.");
+        }
+        
+        $this->stats['polylines']++;
+        
+        $lat1=$a[0]; $lon1=$a[0+1];
+        for($i=0;$i<$count;$i+=2)
+        {
+            $lat2=$a[$i]; $lon2=$a[$i+1];
+            $this->renderShapeThickline($im,$lat1,$lon1,$lat2,$lon2,$linecolor,$this->thickness);
+            $lat1=$lat2; $lon1=$lon2;
+        }
+    }
+    
+    private function renderShapePolygon($im, array $a, $linecolor, $fillcolor)
+    {
+        $count=count($a);
+        
+        if(!($count>=3)) {
             throw \Symfony\Component\Debug\Exception\ContextErrorException("Polygon count {$count}.");
         }
         
-        $this->renderShapePolygon($im,$a,$linecolor,$fillcolor);
-        break;
-    
-    default:
-        $this->logger->error("shape=$shape type=$type count=$count");
-}
-
-// draw text
-if(strlen($text)>0) {
-    $this->renderText($im,$text,$textcolor,$select);
-}
-}
-
-//
-if($this->getImageLogo())
-{
-    $logo_color=$this->getColor('logo');
-    // color = imageColorAllocateAlpha($im, 48, 64, 32,90);
-    $size=(sqrt($this->width)/2.0); $angle=0; $x=0; $y = $this->clip['height']-$size;
-    imagettftext($im, $size, $angle, $x, $y, $logo_color, $this->font,
-    "Rendered ".date('r',time())." - US Census Data Tiger/Line {$this->yearfp} - $this->width x $this->height ($lines)"
-    );
-}
-
-}
-
-
-//
-private function clipROI(array $a): array
-{
-    $this->roi=[
-    'Xmin'=>null,
-    'Ymin'=>null,
-    'Xmax'=>null,
-    'Ymax'=>null,
-    ];
-    
-    $count=count($a);
-    if(($count%2)==1) { $count--; }
-    for($i=0;$i<$count;$i+=2)
-    {
-        $lat=$a[$i];
-        $lon=$a[$i+1];
+        $this->stats['polygons']++;
         
-        if($this->roi['Xmin']==null || $lat<$this->roi['Xmin']) $this->roi['Xmin']=$lat;
-        if($this->roi['Ymin']==null || $lon<$this->roi['Ymin']) $this->roi['Ymin']=$lon;
-        if($this->roi['Xmax']==null || $lat>$this->roi['Xmax']) $this->roi['Xmax']=$lat;
-        if($this->roi['Ymax']==null || $lon>$this->roi['Ymax']) $this->roi['Ymax']=$lon;
+        $count=count($a);
+        for($i=0;$i<$count;$i+=2)
+        {
+            $a[$i]=(int)(($a[$i+0]-$this->clip['Xmin'])*$this->clip['zoom']);
+            $a[$i+1]=(int)($this->clip['height']-($a[$i+1]-$this->clip['Ymin'])*$this->clip['zoom']);
+        }
+        
+        imagefilledpolygon($im, $a, count($a)/2, $fillcolor);
+        imagepolygon($im, $a, count($a)/2, $linecolor);
     }
     
-    return $this->computeRegionMids($this->roi);
-}
-
-
-//
-private function renderText($im,string $text,$fontcolor,array $select)
-{
-    $text=trim($text);
-    if($text=='') return;
-    
-    $lat=(($select['Xmax']-$select['Xmin'])/2)+$select['Xmin'];
-    $lon=(($select['Ymax']-$select['Ymin'])/2)+$select['Ymin'];
-    
-    $w1=($this->clip['Xmax']-$this->clip['Xmin']);
-    $w2=($select['Xmax']-$select['Xmin']);
-    $fontsize = (($w2/$w1)*$this->clip['width'])*.1; //rand(3,30);
-    if($fontsize<2) {
-        $this->stats['rejected text']++;
-        return;
-    }
-    
-    $this->stats['text']++;
-    
-    $rotation=0; //rand(0,360);
-    
-    $a=imagettfbbox($fontsize, $rotation, $this->font, $text);
-    
-    //$dy=abs($a[6]-$a[1]);
-    //$this->logger->info("fs=".$this->fontsize);
-    
-    $x=(int)(($lat-$this->clip['Xmin'])*$this->clip['zoom']);
-    $y=(int)($this->clip['height']-($lon-$this->clip['Ymin'])*$this->clip['zoom']);
-    $x-=(($a[2]-$a[0])/2);
-    
-    //$this->logger->info("lat=$lat lon=$lon x=$x y=$y s=$this->fontsize r=$rotation ".$a[0]."-".$a[1]." text=$text");
-    // $this->io->note("lat=$lat lon=$lon x=$x y=$y s=$fontsize r=$rotation ".$a[0]."-".$a[1]." text=$text");
-    
-    $r=($fontcolor>>16)&255;
-    $g=($fontcolor>>8)&255;
-    $b=($fontcolor&255);
-    $textcolor = imageColorAllocateAlpha($im, $r, $g, $b,30);
-    
-    imagettftext($im, $fontsize, $rotation, $x, $y, $textcolor, $this->font, $text);
-}
-
-private function renderShapePoint($im,float $lat,float $lon, int $linecolor)
-{
-    $this->stats['point']++;
-    
-    $x=(int)(($lat-$this->clip['Xmin'])*$this->clip['zoom']);
-    $y=(int)($this->clip['height']-($lon-$this->clip['Ymin'])*$this->clip['zoom']);
-    
-    imagesetpixel($im,$x,$y,$linecolor);
-}
-
-private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, float $lon2, int $linecolor)
-{
-    $this->stats['box']++;
-    
-    $this->renderShapeLine($im,$lat1,$lon1,$lat2,$lon1,$linecolor);
-    $this->renderShapeLine($im,$lat1,$lon2,$lat2,$lon2,$linecolor);
-    $this->renderShapeLine($im,$lat1,$lon1,$lat1,$lon2,$linecolor);
-    $this->renderShapeLine($im,$lat2,$lon1,$lat2,$lon2,$linecolor);
-}
-
-private function renderShapeLine($im, float $lat1, float $lon1, float $lat2,float $lon2, int $linecolor)
-{
-    $this->stats['line']++;
-    
-    if($lat1<$this->clip['Xmin'] && $lat2<$this->clip['Xmin']) return;
-    if($lat1>$this->clip['Xmax'] && $lat2>$this->clip['Xmax']) return;
-    
-    if($lon1<$this->clip['Ymin'] && $lon2<$this->clip['Ymin']) return;
-    if($lon1>$this->clip['Ymax'] && $lon2>$this->clip['Ymax']) return;
-    
-    $x1=(int)(($lat1-$this->clip['Xmin'])*$this->clip['zoom']);
-    $y1=(int)(($lon1-$this->clip['Ymin'])*$this->clip['zoom']);
-    $x2=(int)(($lat2-$this->clip['Xmin'])*$this->clip['zoom']);
-    $y2=(int)(($lon2-$this->clip['Ymin'])*$this->clip['zoom']);
-    imageline($im,$x1,$this->clip['height']-$y1,$x2,$this->clip['height']-$y2,$linecolor);
-}
-
-private function renderShapeThickline($im,float $lat1,float $lon1,float $lat2,float $lon2,$linecolor,$thickness)
-{
-    if($this->thickness<=1) {
-        return $this->renderShapeLine($im,$lat1,$lon1,$lat2,$lon2,$linecolor);
-    }
-    
-    $t=$this->thickness/2.0;
-    
-    $xa=(int)(($lat1-$this->clip['Xmin'])*$this->clip['zoom']);
-    $ya=(int)(($lon1-$this->clip['Ymin'])*$this->clip['zoom']);
-    $xb=(int)(($lat2-$this->clip['Xmin'])*$this->clip['zoom']);
-    $yb=(int)(($lon2-$this->clip['Ymin'])*$this->clip['zoom']);
-    
-    $a = (atan2(($yb - $ya), ($xb - $xa))); //radians
-    
-    $pi2=3.14159/2;
-    
-    $p[0]=                 $xa+(cos($a+$pi2)*$t);
-    $p[1]=$this->clip['height']-($ya+(sin($a+$pi2)*$t));
-    
-    $p[2]=                 $xa+(cos($a-$pi2)*$t);
-    $p[3]=$this->clip['height']-($ya+(sin($a-$pi2)*$t));
-    
-    $p[4]=                 $xb+(cos($a-$pi2)*$t);
-    $p[5]=$this->clip['height']-($yb+(sin($a-$pi2)*$t));
-    
-    $p[6]=                 $xb+(cos($a+$pi2)*$t);
-    $p[7]=$this->clip['height']-($yb+(sin($a+$pi2)*$t));
-    
-    imagefilledpolygon($im, $p, count($p)/2, $linecolor);
-}
-
-
-private function renderShapePolygon($im, array $a, $linecolor, $fillcolor)
-{
-    $this->stats['polygon']++;
-    
-    $count=count($a);
-    for($i=0;$i<$count;$i+=2)
+    //todo: move colors to parameters and a state-optional color code?
+    private function getTextColorByType($im,string $type,$alpha=50)
     {
-        $a[$i]=(int)(($a[$i+0]-$this->clip['Xmin'])*$this->clip['zoom']);
-        $a[$i+1]=(int)($this->clip['height']-($a[$i+1]-$this->clip['Ymin'])*$this->clip['zoom']);
-    }
-    
-    imagefilledpolygon($im, $a, count($a)/2, $fillcolor);
-    imagepolygon($im, $a, count($a)/2, $linecolor);
-}
-
-//todo: move colors to parameters and a state-optional color code?
-private function getTextColorByType($im,string $type,$alpha=50)
-{
-    switch($type)
-    {
-        case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
-            break; //area landmark
-        case 'M': return imagecolorallocatealpha($im,128,128,0,$alpha);
+        switch($type)
+        {
+            case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
+                break; //area landmark
+            case 'M': return imagecolorallocatealpha($im,128,128,0,$alpha);
+                
+                break; //landmark
+            case 'W': return imagecolorallocatealpha($im,64,0,200,$alpha);
+                break; //water
+            case 'E': return imagecolorallocatealpha($im,64,0,0,$alpha);
+                break;
             
-            break; //landmark
-        case 'W': return imagecolorallocatealpha($im,64,0,200,$alpha);
-            break; //water
-        case 'E': return imagecolorallocatealpha($im,64,0,0,$alpha);
-            break;
-        
-        case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
-            break;
-        case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
-            break;
-        case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        
-        case 'C': return imagecolorallocatealpha($im,124,80,60,$alpha);
-            break;
-        case 'P': return imagecolorallocatealpha($im,255,255,64,$alpha);
-            break;
-        
-        default:
-            return imagecolorallocatealpha($im,255,0,0,$alpha);
-    }
-}
-
-private function getLineColorByType($im,string $type,$alpha=0)
-{
-    switch($type)
-    {
-        case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
-            break; //area landmark
-        case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
-            break; //landmark
-        case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
-            break; //water
-        case 'E': return imagecolorallocatealpha($im,0,0,0,$alpha);
-            break;
-        
-        case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
-            break;
-        case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
-            break;
-        case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'C': return imagecolorallocatealpha($im,60,80,60,$alpha);
-            break; //county
-        case 'P': return imagecolorallocatealpha($im,255,255,0,$alpha);
-            break; //
-        
-        default:
-            return imagecolorallocatealpha($im,255,0,0,$alpha);
-    }
-}
-
-private function getFillColorByType($im,string $type,$alpha=70)
-{
-    switch($type)
-    {
-        case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
-            break; //area landmark
-        case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
-            break; //landmark
-        case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
-            break; //water
-        case 'E': return imagecolorallocatealpha($im,200,100,100,$alpha);
-            break; //county
-        case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
-            break;
-        case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
-            break;
-        case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
-            break;
-        case 'C': return imagecolorallocatealpha($im,130,160,120,98);
-            break;
-        case 'P': return imagecolorallocatealpha($im,255,255,0,98);
-            break;
-        default:
-            return imagecolorallocatealpha($im,255,0,0,98);
+            case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
+                break;
+            case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
+                break;
+            case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            
+            case 'C': return imagecolorallocatealpha($im,124,80,60,$alpha);
+                break;
+            case 'P': return imagecolorallocatealpha($im,255,255,64,$alpha);
+                break;
+            
+            default:
+                return imagecolorallocatealpha($im,255,0,0,$alpha);
+        }
     }
     
-}
-
-//
-private function getThicknessByShapeAndType(string $shape,string $type): int
-{
-    switch($shape)
+    private function getLineColorByType($im,string $type,$alpha=0)
     {
-        case '*': $this->thickness=3;
-            break;
-        case 'L': $this->thickness=2;
-            break;
-        case 'P': $this->thickness=1;
-            break;
-        default: $this->thickness=1;
+        switch($type)
+        {
+            case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
+                break; //area landmark
+            case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
+                break; //landmark
+            case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
+                break; //water
+            case 'E': return imagecolorallocatealpha($im,0,0,0,$alpha);
+                break;
+            
+            case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
+                break;
+            case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
+                break;
+            case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'C': return imagecolorallocatealpha($im,60,80,60,$alpha);
+                break; //county
+            case 'P': return imagecolorallocatealpha($im,255,255,0,$alpha);
+                break; //
+            
+            default:
+                return imagecolorallocatealpha($im,255,0,0,$alpha);
+        }
     }
-    switch($type)
+    
+    private function getFillColorByType($im,string $type,$alpha=70)
     {
-        case 'r': $this->thickness=2;
-            break;
-        case 'h': $this->thickness=5;
-            break;
-        case 'i': $this->thickness=3;
-            break;
-        case 'C': $this->thickness=6;
-            break;
-        default:
+        switch($type)
+        {
+            case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
+                break; //area landmark
+            case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
+                break; //landmark
+            case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
+                break; //water
+            case 'E': return imagecolorallocatealpha($im,200,100,100,$alpha);
+                break; //county
+            case 'r': return imagecolorallocatealpha($im,128,64,0,$alpha);
+                break;
+            case 't': return imagecolorallocatealpha($im,64,64,0,$alpha);
+                break;
+            case 'h': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'i': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
+                break;
+            case 'C': return imagecolorallocatealpha($im,130,160,120,98);
+                break;
+            case 'P': return imagecolorallocatealpha($im,255,255,0,98);
+                break;
+            default:
+                return imagecolorallocatealpha($im,255,0,0,98);
+        }
+        
     }
-    // imagesetthickness($im,$this->thickness);
-    return $this->thickness;
-}
-
-/*
-
+    
+    //
+    private function getThicknessByShapeAndType(string $shape,string $type): int
+    {
+        switch($shape)
+        {
+            case '*': $this->thickness=3;
+                break;
+            case 'L': $this->thickness=2;
+                break;
+            case 'P': $this->thickness=1;
+                break;
+            default: $this->thickness=1;
+        }
+        switch($type)
+        {
+            case 'r': $this->thickness=2;
+                break;
+            case 'h': $this->thickness=5;
+                break;
+            case 'i': $this->thickness=3;
+                break;
+            case 'C': $this->thickness=6;
+                break;
+            default:
+        }
+        // imagesetthickness($im,$this->thickness);
+        return $this->thickness;
+    }
+    
+    /*
+    
     protected function minimumResolutionCull(array $roi): bool
     {
-        return false;
-        
-        $minRes=0.00001;
-        
-        if(!is_array($this->clip)) {
-            return false;
-        }
-        //$this->printArray($roi); $this->printClip();
-        
-        $rw=abs($roi['Xmax']-$roi['Xmin']);
-        $rh=abs($roi['Ymax']-$roi['Ymin']);
-        // echo "rw rh =  :$rw $rh = \n";
-        
-        if($rw==0 || $rh==0) {
-            return true;
-        }
-        
-        $dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
-        $dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
-        
-        //  echo "dw/dh =  :$dw $dh = \n";
-        
-        if($dw==0 || $dh==0) {
-            return true;
-        }
-        
-        $w=$rw/$dw;
-        $h=$rh/$dh;
-        // echo "rw/dw =  :".($w)." = \n";
-        //echo "rh/dh =  : ".($h)." = \n";
-        
-        if( ($w < $minRes) && ($h < $minRes)) {
-            return true;
-        }
-        
-        return false;
+    return false;
+    
+    $minRes=0.00001;
+    
+    if(!is_array($this->clip)) {
+    return false;
+    }
+    //$this->printArray($roi); $this->printClip();
+    
+    $rw=abs($roi['Xmax']-$roi['Xmin']);
+    $rh=abs($roi['Ymax']-$roi['Ymin']);
+    // echo "rw rh =  :$rw $rh = \n";
+    
+    if($rw==0 || $rh==0) {
+    return true;
+    }
+    
+    $dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
+    $dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
+    
+    //  echo "dw/dh =  :$dw $dh = \n";
+    
+    if($dw==0 || $dh==0) {
+    return true;
+    }
+    
+    $w=$rw/$dw;
+    $h=$rh/$dh;
+    // echo "rw/dw =  :".($w)." = \n";
+    //echo "rh/dh =  : ".($h)." = \n";
+    
+    if( ($w < $minRes) && ($h < $minRes)) {
+    return true;
+    }
+    
+    return false;
     }
     
     */

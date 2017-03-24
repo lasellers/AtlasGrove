@@ -67,6 +67,10 @@ or a bound latitude/longitude region such as:
     php bin/console atlasgrove/render 47 --roi --8k --force
 Adding the --roi flag causes the roi of state 47 to be looked up and then rendered as a bound lat/long region.
 
+The layers that are rendered can be selected by a csv list such as:
+    php bin/console atlasgrove:render 47001 --roi --layers=water,road,rail,landmark,area
+    php bin/console atlasgrove:render 47001 --roi --layers=area,rail
+
     php bin/console atlasgrove:render 47 aspect=Width
 
     php bin/console atlasgrove:render 47 lod=1
@@ -83,13 +87,8 @@ Adding the --roi flag causes the roi of state 47 to be looked up and then render
     php bin/console atlasgrove:render test=tn --steps
     php bin/console atlasgrove:render test=us --steps
 
-    php bin/console atlasgrove:render -86,34,-85,35 tiles=32
-
-    php bin/console atlasgrove:render 47 --roi tiles=32
-    php bin/console atlasgrove:render 47 --roi --roads
-
-    php bin/console atlasgrove:render 0 --roi --roads
-    php bin/console atlasgrove:render --roi --roads
+    php bin/console atlasgrove:render 0 --roi --layers=area,road,rail
+    php bin/console atlasgrove:render --roi --layers=area,road,rail
 
 
 ## Web Interface
