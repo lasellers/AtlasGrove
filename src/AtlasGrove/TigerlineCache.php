@@ -34,7 +34,6 @@ class TigerlineCache extends Tigerline
     public function resetStats()
     {
         //
-        $this->stats['files']=0;
         $this->stats['dbf files']=0;
         $this->stats['shx files']=0;
         $this->stats['shp files']=0;
@@ -47,11 +46,6 @@ class TigerlineCache extends Tigerline
         $this->stats['points']=0;
         $this->stats['points out']=0;
         $this->stats['points roi culled']=0;
-        
-        $this->stats['arealm count']=0;
-        $this->stats['pointlm count']=0;
-        $this->stats['areawater count']=0;
-        $this->stats['edges count']=0;
         
         $this->stats['arealm files']=0;
         $this->stats['pointlm files']=0;
@@ -74,8 +68,6 @@ class TigerlineCache extends Tigerline
         
         $header=['Name','Count','Result'];
         $data=[];
-        
-        $data[]=["Files",$this->stats['files'],""];
                 
         $data[]=["Shapes",$this->stats['shapes'],""];
         
@@ -185,7 +177,7 @@ class TigerlineCache extends Tigerline
         }
         return implode(' ',$a);
     }
-   
+    
     
     public function cacheShapes(array $files,bool $force=false)
     {
@@ -195,7 +187,7 @@ class TigerlineCache extends Tigerline
             $this->cacheShape($id,$force);
         }
     }
- 
+    
     public function cacheShape(int $id,bool $force=false): bool
     {
         $cacheFilename=$this->cacheIdToFilename($id);
@@ -231,11 +223,8 @@ class TigerlineCache extends Tigerline
                 
                 //mfha mfharecords
                 $this->cacheShapefileContents(
-                $file['dbf'],
-                $cacheFilename,
-                $file['shp'],
-                $file['type'],
-                $file['nameField']
+                $file,
+                $cacheFilename
                 );
             }
             
@@ -259,141 +248,151 @@ class TigerlineCache extends Tigerline
     
     
     //
-    protected function cacheShapefileContents(string $dbfFilename,string $cacheFilename,string $shpFilename,string $type, string $namefield="FULLNAME")
+    protected function cacheShapefileContents(array $fileArray, string $cacheFilename)
     {
+        extract($fileArray);
+        
         if(!file_exists($dbfFilename))
         {
+            $this->io->error("Could not find file $dbfFilename.");
+            return;
+        }
+        if(!file_exists($shpFilename))
+        {
+            $this->io->error("Could not find file $shpFilename.");
             return;
         }
         
-        $dbf_records = DBase::fromFile($dbfFilename);
+        $dbfRecords = DBase::fromFile($dbfFilename);
         
         $this->stats['dbf files']++;
-        $this->stats['dbf records']+=count($dbf_records);
-        $this->stats['files']++;
+        $this->stats['dbf records']+=count($dbfRecords);
+        $this->stats[$prefix.' files']++;
         
-        $record=each($dbf_records);
+        $record=each($dbfRecords);
         $fields=array_keys($record);
         
-        //foreach ($dbf_records as $record)
+        //foreach ($dbfRecords as $record)
         // {
         //   $fields=array_keys($record->getArrayCopy());
         //   break;
         // }
         
-        $record_numbers = count($dbf_records);
+        // $record_numbers = count($dbfRecords);
         
         //
-        $size=filesize($shpFilename);
         
         $shpHandle = fopen($shpFilename, "rb");
-        if($shpHandle !== FALSE)
+        if($shpHandle === FALSE)
         {
-            $this->stats['shp files']++;
-            $this->stats['files']++;
+            $this->io->error("Could not open shape file $shpFilename.");
+            return;
+        }
+        
+        $shpFileSize=filesize($shpFilename);
+        
+        $this->stats['shp files']++;
+        
+        $binarydata = fread($shpHandle, 100);
+        
+        //main field header
+        $mfha = unpack(
+        "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
+        $binarydata);
+        $this->printMFHAResolution($mfha);
+        
+        //if(!isset($this->roi))
+        //{
+        $this->roi['Xmin']=$mfha['Xmin'];
+        $this->roi['Xmax']=$mfha['Xmax'];
+        $this->roi['Ymin']=$mfha['Ymin'];
+        $this->roi['Ymax']=$mfha['Ymax'];
+        // }
+        $this->rois[]=$this->roi;
+        
+        //
+        $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
+        $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
+        
+        if(ftell($this->out)==0)
+        {
+            //line 1
+            fputs($this->out,$this->version."\r\n");
             
-            $binarydata = fread($shpHandle, 100);
+            //line 2
+            fputs($this->out,json_encode($this->roi)."\r\n");
             
-            //main field header
-            $mfha = unpack(
-            "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
-            $binarydata);
-            $this->printMFHAResolution($mfha);
+            // line 3
+            fputs($this->out,"# placeholding for ROIs\r\n");
+                
+            //line 3 (initial values)
+            $this->clip=$this->computeRegionMids($this->roi);
             
-            //if(!isset($this->roi))
-            //{
-            $this->roi['Xmin']=$mfha['Xmin'];
-            $this->roi['Xmax']=$mfha['Xmax'];
-            $this->roi['Ymin']=$mfha['Ymin'];
-            $this->roi['Ymax']=$mfha['Ymax'];
-            // }
-            $this->rois[]=$this->roi;
+            fputs($this->out,"# placeholding for Clip");
+            }
+        
+        //
+        $this->setShapePoly();
+        
+        //
+        $count=0;
+        $pos=ftell($shpHandle);
+        while(!feof($shpHandle) && ($pos+8)<$shpFileSize)
+        {
+            $this->stats['shp records']++;
+            $this->stats['records']++;
             
             //
-            $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
-            $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
+            $row = $dbfRecords[$count];
             
-            if(ftell($this->out)==0)
-            {
-                //line 1
-                fputs($this->out,$this->version."\r\n");
-                
-                //line 2
-                fputs($this->out,json_encode($this->roi)."\r\n");
-                
-                // line 3
-                fputs($this->out,"# placeholding for ROIs\r\n");
-                    
-                //line 3 (initial values)
-                $this->clip=$this->computeRegionMids($this->roi);
-                
-                fputs($this->out,"# placeholding for Clip");
-                }
+            $text=$row[$nameField];
             
             //
-            $this->setShapePoly();
-            
-            //
-            $count=0;
+            $binarydata = fread($shpHandle, 8);
             $pos=ftell($shpHandle);
-            while(!feof($shpHandle) && ($pos+8)<$size)
+            $rh = unpack("NRecordNumber/NContentLength",$binarydata);
+            
+            //
+            $binarydata = fread($shpHandle, 4);
+            $rc = unpack("IShapeType",$binarydata);
+            
+            // i h p r t
+            if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
+            $type2='i';
+            else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
+            $type2='h';
+            else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
+            $type2='p';
+            else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
+            $type2='r';
+            else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
+            $type2='t';
+            else
+                $type2=$type;
+            
+            switch($rc['ShapeType'])
             {
-                $this->stats['shp records']++;
-                $this->stats['records']++;
-                
-                //
-                $row = $dbf_records[$count];
-                
-                $text=$row[$namefield];
-                
-                //
-                $binarydata = fread($shpHandle, 8);
-                $pos=ftell($shpHandle);
-                $rh = unpack("NRecordNumber/NContentLength",$binarydata);
-                
-                //
-                $binarydata = fread($shpHandle, 4);
-                $rc = unpack("IShapeType",$binarydata);
-                
-                // i h p r t
-                if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
-                $type2='i';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
-                $type2='h';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
-                $type2='p';
-                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
-                $type2='r';
-                else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
-                $type2='t';
-                else
-                    $type2=$type;
-                
-                switch($rc['ShapeType'])
-                {
-                    case 1:
-                        $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    case 3:
-                        $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    case 5:
-                        $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
-                        break;
-                    default:
-                        $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
-                }
-                
-                //
-                fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
-                $pos=ftell($shpHandle);
-                
-                $count++;
+                case 1:
+                    $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
+                    break;
+                case 3:
+                    $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
+                    break;
+                case 5:
+                    $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
+                    break;
+                default:
+                    $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
             }
             
-            fclose($shpHandle);
+            //
+            fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
+            $pos=ftell($shpHandle);
+            
+            $count++;
         }
-        //  $this->clip=$this->computeRegionMids($this->clip);
+        
+        fclose($shpHandle);
     }
     
     
@@ -695,7 +694,7 @@ public function cacheStatesList() {
         // fe_2007_47_county.dbf
         $records[]=$statefp."\t".$state_folder."\t".$state;
     }
-
+    
     //
     file_put_contents($this->getDataCachePath()."/list.states.txt",implode("\n",$records));
     
@@ -722,19 +721,19 @@ public function cacheCountiesList() {
         $dbfFilename=$this->getDataPath()."/{$state_folder}/fe_{$this->yearfp}_{$statefp}_county.dbf";
         if(file_exists($dbfFilename))
         {
-            $dbf_records = DBase::fromFile($dbfFilename);
+            $dbfRecords = DBase::fromFile($dbfFilename);
             $this->stats['dbf files']++;
-            $this->stats['dbf records']+=count($dbf_records);
+            $this->stats['dbf records']+=count($dbfRecords);
             $this->stats['files']++;
             
-            foreach ($dbf_records as $record) {
+            foreach ($dbfRecords as $record) {
                 //      $records[]=$record->getArrayCopy();
                 $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];
             }
         }
     }
-
-    //    
+    
+    //
     file_put_contents($this->getDataCachePath()."/list.counties.txt",implode("\n",$records));
     
     //
@@ -759,14 +758,14 @@ protected function getFilesForId(string $id): array
             
             $subtype['nameField']='NAMELSAD';
             $prefix=$subtype['prefix'];
-            $files[]= [
+            $files[] = [
             'type'=>$subtype['type'],
             'prefix'=>$subtype['prefix'],
             'nameField'=>$subtype['nameField'],
-            'shp'=>$this->getDataPath()."/".$file.".shp",
-            'shx'=>$this->getDataPath()."/".$file.".shx",
-            'dbf'=>$this->getDataPath()."/".$file.".dbf",
-            'prj'=>$this->getDataPath()."/".$file.".prj",
+            'shpFilename'=>$this->getDataPath()."/".$file.".shp",
+            'shxFilename'=>$this->getDataPath()."/".$file.".shx",
+            'dbfFilename'=>$this->getDataPath()."/".$file.".dbf",
+            'prjFilename'=>$this->getDataPath()."/".$file.".prj",
             ];
         }
         return $files;
@@ -790,10 +789,10 @@ protected function getFilesForId(string $id): array
         'type'=>$subtype['type'],
         'prefix'=>$subtype['prefix'],
         'nameField'=>$subtype['nameField'],
-        'shp'=>$this->getDataPath()."/".$file.".shp",
-        'shx'=>$this->getDataPath()."/".$file.".shx",
-        'dbf'=>$this->getDataPath()."/".$file.".dbf",
-        'prj'=>$this->getDataPath()."/".$file.".prj",
+        'shpFilename'=>$this->getDataPath()."/".$file.".shp",
+        'shxFilename'=>$this->getDataPath()."/".$file.".shx",
+        'dbfFilename'=>$this->getDataPath()."/".$file.".dbf",
+        'prjFilename'=>$this->getDataPath()."/".$file.".prj",
         ];
     }
     return $files;
@@ -823,10 +822,10 @@ protected function getFilesForId(string $id): array
         'type'=>$subtype['type'],
         'prefix'=>$subtype['prefix'],
         'nameField'=>$subtype['nameField'],
-        'shp'=>$this->getDataPath()."/".$file.$prefix.".shp",
-        'shx'=>$this->getDataPath()."/".$file.$prefix.".shx",
-        'dbf'=>$this->getDataPath()."/".$file.$prefix.".dbf",
-        'prj'=>$this->getDataPath()."/".$file.$prefix.".prj",
+        'shpFilename'=>$this->getDataPath()."/".$file.$prefix.".shp",
+        'shxFilename'=>$this->getDataPath()."/".$file.$prefix.".shx",
+        'dbfFilename'=>$this->getDataPath()."/".$file.$prefix.".dbf",
+        'prjFilename'=>$this->getDataPath()."/".$file.$prefix.".prj",
         ];
     }
     return $files;
