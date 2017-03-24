@@ -46,8 +46,6 @@ class TigerlineCache extends Tigerline
         $this->stats['points']=0;
         $this->stats['points out']=0;
         $this->stats['points roi culled']=0;
-        $this->stats['minimum-resolution record cull']=0;
-        $this->stats['minimum-resolution file cull']=0;
         
         $this->stats['arealm count']=0;
         $this->stats['pointlm count']=0;
@@ -77,25 +75,7 @@ class TigerlineCache extends Tigerline
         $data=[];
         
         $data[]=["Files",$this->stats['files'],""];
-        
-        try {
-            $result=(100*($this->stats['minimum-resolution file cull']/$this->stats['files']));
-        } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
-        {
-            $result=0;
-        }
-        $data[]=["Files minres Culled",$this->stats['minimum-resolution file cull'],"%$result"];
-        
-        $data[]=["Records",$this->stats['records'],""];
-        
-        try {
-            $result = (100*($this->stats['minimum-resolution record cull']/$this->stats['records']));
-        } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
-        {
-            $result=0;
-        }
-        $data[]=["Records minres Culled",$this->stats['minimum-resolution record cull'],"%$result"];
-        
+                
         $data[]=["Shapes",$this->stats['shapes'],""];
         
         try {
@@ -206,47 +186,6 @@ class TigerlineCache extends Tigerline
     }
     //
     
-    protected function minimumResolutionCull(array $roi): bool
-    {
-        return false;
-        
-        $minRes=0.00001;
-        
-        if(!is_array($this->clip)) {
-            return false;
-        }
-        //$this->printArray($roi); $this->printClip();
-        
-        $rw=abs($roi['Xmax']-$roi['Xmin']);
-        $rh=abs($roi['Ymax']-$roi['Ymin']);
-        // echo "rw rh =  :$rw $rh = \n";
-        
-        if($rw==0 || $rh==0) {
-            return true;
-        }
-        
-        $dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
-        $dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
-        
-        //  echo "dw/dh =  :$dw $dh = \n";
-        
-        if($dw==0 || $dh==0) {
-            return true;
-        }
-        
-        $w=$rw/$dw;
-        $h=$rh/$dh;
-        // echo "rw/dw =  :".($w)." = \n";
-        //echo "rh/dh =  : ".($h)." = \n";
-        
-        if( ($w < $minRes) && ($h < $minRes)) {
-            return true;
-        }
-        
-        return false;
-    }
-    
-    
     
     public function cacheShapes(array $files,bool $force=false)
     {
@@ -258,7 +197,7 @@ class TigerlineCache extends Tigerline
         
     }
     
-
+    
     
     public function cacheShape(int $id,bool $force=false): bool
     {
@@ -372,93 +311,85 @@ class TigerlineCache extends Tigerline
             $this->rois[]=$this->roi;
             
             //
-            if($this->minimumResolutionCull($this->roi)) {
-                $this->stats['minimum-resolution file cull']++;
-            }
-            else
+            $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
+            $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
+            
+            if(ftell($this->out)==0)
             {
-                //
-                $w=abs($this->roi['Xmax']-$this->roi['Xmin']);
-                $h=abs($this->roi['Ymax']-$this->roi['Ymin']);
+                //line 1
+                fputs($this->out,$this->version."\r\n");
                 
-                if(ftell($this->out)==0)
-                {
-                    //line 1
-                    fputs($this->out,$this->version."\r\n");
+                //line 2
+                fputs($this->out,json_encode($this->roi)."\r\n");
+                
+                // line 3
+                fputs($this->out,"# placeholding for ROIs\r\n");
                     
-                    //line 2
-                    fputs($this->out,json_encode($this->roi)."\r\n");
-                    
-                    // line 3
-                    fputs($this->out,"# placeholding for ROIs\r\n");
-                        
-                    //line 3 (initial values)
-                    $this->clip=$this->computeRegionMids($this->roi);
-                    
-                    fputs($this->out,"# placeholding for Clip");
-                    }
+                //line 3 (initial values)
+                $this->clip=$this->computeRegionMids($this->roi);
+                
+                fputs($this->out,"# placeholding for Clip");
+                }
+            
+            //
+            $this->setShapePoly();
+            
+            //
+            $count=0;
+            $pos=ftell($shpHandle);
+            while(!feof($shpHandle) && ($pos+8)<$size)
+            {
+                $this->stats['shp records']++;
+                $this->stats['records']++;
                 
                 //
-                $this->setShapePoly();
+                $row = $dbf_records[$count];
+                
+                $text=$row[$namefield];
                 
                 //
-                $count=0;
+                $binarydata = fread($shpHandle, 8);
                 $pos=ftell($shpHandle);
-                while(!feof($shpHandle) && ($pos+8)<$size)
+                $rh = unpack("NRecordNumber/NContentLength",$binarydata);
+                
+                //
+                $binarydata = fread($shpHandle, 4);
+                $rc = unpack("IShapeType",$binarydata);
+                
+                //
+                if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
+                $type2='i';
+                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
+                $type2='h';
+                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
+                $type2='p';
+                else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
+                $type2='r';
+                else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
+                $type2='t';
+                else
+                    $type2=$type;
+                
+                switch($rc['ShapeType'])
                 {
-                    $this->stats['shp records']++;
-                    $this->stats['records']++;
-                    
-                    //
-                    $row = $dbf_records[$count];
-                    
-                    $text=$row[$namefield];
-                    
-                    //
-                    $binarydata = fread($shpHandle, 8);
-                    $pos=ftell($shpHandle);
-                    $rh = unpack("NRecordNumber/NContentLength",$binarydata);
-                    
-                    //
-                    $binarydata = fread($shpHandle, 4);
-                    $rc = unpack("IShapeType",$binarydata);
-                    
-                    //
-                    if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
-                    $type2='i';
-                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Hwy'))
-                    $type2='h';
-                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Pkwy'))
-                    $type2='p';
-                    else if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y')
-                    $type2='r';
-                    else if(isset($row['RAILFLG']) && $row['RAILFLG']=='Y')
-                    $type2='t';
-                    else
-                        $type2=$type;
-                    
-                    switch($rc['ShapeType'])
-                    {
-                        case 1:
-                            $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
-                            break;
-                        case 3:
-                            $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
-                            break;
-                        case 5:
-                            $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
-                            break;
-                        default:
-                            $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
-                    }
-                    
-                    //
-                    fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
-                    $pos=ftell($shpHandle);
-                    
-                    $count++;
+                    case 1:
+                        $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    case 3:
+                        $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    case 5:
+                        $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    default:
+                        $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
                 }
                 
+                //
+                fseek($shpHandle,$pos + $rh['ContentLength']*2,SEEK_SET);
+                $pos=ftell($shpHandle);
+                
+                $count++;
             }
             
             fclose($shpHandle);
@@ -489,11 +420,6 @@ class TigerlineCache extends Tigerline
         $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
         
         //printMFHAResolution($h);
-        if($this->minimumResolutionCull($h))
-        {
-            $this->stats['minimum-resolution record cull']++;
-            return;
-        }
         
         $pos=ftell($handle);
         
@@ -588,11 +514,6 @@ protected function cacheShapefileTypePolygon($handle,string $type,int $length=0,
     $h = unpack("dXmin/dYmin/dXmax/dYmax/InumParts/InumPoints/",$binarydata);
     
     //printMFHAResolution($h);
-    if($this->minimumResolutionCull($h))
-    {
-        $this->stats['minimum-resolution record cull']++;
-        return;
-    }
     
     $pos=ftell($handle);
     

@@ -1118,4 +1118,47 @@ private function getThicknessByShapeAndType(string $shape,string $type): int
     return $this->thickness;
 }
 
+/*
+
+    protected function minimumResolutionCull(array $roi): bool
+    {
+        return false;
+        
+        $minRes=0.00001;
+        
+        if(!is_array($this->clip)) {
+            return false;
+        }
+        //$this->printArray($roi); $this->printClip();
+        
+        $rw=abs($roi['Xmax']-$roi['Xmin']);
+        $rh=abs($roi['Ymax']-$roi['Ymin']);
+        // echo "rw rh =  :$rw $rh = \n";
+        
+        if($rw==0 || $rh==0) {
+            return true;
+        }
+        
+        $dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
+        $dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
+        
+        //  echo "dw/dh =  :$dw $dh = \n";
+        
+        if($dw==0 || $dh==0) {
+            return true;
+        }
+        
+        $w=$rw/$dw;
+        $h=$rh/$dh;
+        // echo "rw/dw =  :".($w)." = \n";
+        //echo "rh/dh =  : ".($h)." = \n";
+        
+        if( ($w < $minRes) && ($h < $minRes)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    */
 }
