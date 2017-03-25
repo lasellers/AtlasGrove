@@ -37,7 +37,7 @@ class TigerlineRender extends Tigerline
         $this->setAspectType();
         $this->setLODType();
         $this->setRegionType();
-        $this->font=$this->selectFont();
+        $this->font=$this->getFont();
         
         $this->resetstats();
     }
@@ -95,31 +95,23 @@ class TigerlineRender extends Tigerline
     
     public function getFont(): string
     {
-        return $this->font;
-    }
-    
-    public function getFonts(): array
-    {
-        return $this->fonts;
-    }
-    
-    public function selectFont(): string
-    {
-        //
-        $fontsPath=$this->getRootPath()."/Resources/fonts/\*.ttf";
-        $this->fonts=glob($fontsPath);
-        
-        if(count($this->fonts) > 0)
-        {
-            $this->font = $this->fonts[rand(0, count($this->fonts)-1)];
+        if($this->fonts===null) {
+            //
+            $fontsPath=$this->getRootPath()."/Resources/fonts/\*.ttf";
+            $this->fonts=glob($fontsPath);
+            
+            if(count($this->fonts) > 0)
+            {
+                $this->font = $this->fonts[rand(0, count($this->fonts)-1)];
+            }
+            
+            //
+            $this->font=$this->getRootPath()."/Resources/fonts/Tuffy.ttf";
+            $this->logger->info("font={$this->font}");
         }
-        
-        //
-        $this->font=$this->getRootPath()."/Resources/fonts/Tuffy.ttf";
-        $this->logger->info("font={$this->font}");
-        
         return $this->font;
     }
+    
     
     private $aspectType; //None,Width,Height
     private $aspectTypes=["Width","Height","None"];
@@ -758,7 +750,7 @@ class TigerlineRender extends Tigerline
         }
         return false;
     }
-
+    
     //
     private function renderImageFromCacheInner($im,$in,$imageFilename)
     {
@@ -779,11 +771,11 @@ class TigerlineRender extends Tigerline
         if($this->isValidMapObjectType('B1')) {
             $this->renderShapeBox($im,$this->clip['Xmin'],$this->clip['Ymin'],$this->clip['Xmax'],$this->clip['Ymax'],$this->getColor('clip_box'));
         }
-
+        
         if($this->isValidMapObjectType('B2')) {
             $this->renderShapeBox($im,$this->roi['Xmin'],$this->roi['Ymin'],$this->roi['Xmax'],$this->roi['Ymax'],$this->getColor('roi_box'));
         }
-
+        
         $this->setThickness(1);
         
         //
@@ -814,14 +806,14 @@ class TigerlineRender extends Tigerline
             $textcolor=$this->getTextColorByType($im,$type);
             $linecolor=$this->getLineColorByType($im,$type);
             $fillcolor=$this->getFillColorByType($im,$type);
-
+            
             if($this->isValidMapObjectType('B3')) {
                 $this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$this->getColor('select_box'));
             }
-
+            
             //'A','M','W','E','r','t','h','i','p','C','P'
             if($this->isValidMapObjectType($type)) {
-
+                
                 // draw shape
                 $this->stats['shape']++;
                 
