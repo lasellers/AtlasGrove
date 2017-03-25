@@ -40,8 +40,8 @@ class Tigerline
     ['prefix'=>'pointlm','type'=>'M','nameField'=>'FULLNAME'],
     ['prefix'=>'areawater','type'=>'W','nameField'=>'FULLNAME'],
     ['prefix'=>'edges','type'=>'E','nameField'=>'FULLNAME']
-    //['prefix'=>'faces','type'=>'r','nameField'=>'FULLNAME']
-    //['prefix'=>'featnanes','type'=>'t','nameField'=>'FULLNAME']
+    //['prefix'=>'faces','type'=>'R','nameField'=>'FULLNAME']
+    //['prefix'=>'featnanes','type'=>'F','nameField'=>'FULLNAME']
     ];
     
     /**
@@ -137,7 +137,7 @@ class Tigerline
     {
         $rows=[];
         foreach($array as $name=>$value) {
-            $rows[]=[UCWords(strtolower($name)),$value];
+            $rows[]=[strlen($name)<=1?$name:UCWords(strtolower($name)),$value];
         }
         return $rows;
     }

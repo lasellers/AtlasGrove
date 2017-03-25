@@ -68,20 +68,26 @@ class TigerlineCache extends Tigerline
         
         $header=['Name','Count','Result'];
         $data=[];
-                
+        
         $data[]=["Shapes",$this->stats['shapes'],""];
         
         try {
-            $result = (100*($this->stats['points out']/$this->stats['points']));
-        } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
+            if($this->stats['points']==0)
+            $result=0;
+            else
+                $result = (100*($this->stats['points out']/$this->stats['points']));
+        } catch(DivisionByZeroError $e)
         {
             $result=0;
         }
         $data[]=["Points: (in)",$this->stats['points']." (out) ".$this->stats['points out'],"%$result"];
         
         try {
-            $result=(100*($this->stats['points roi culled']/$this->stats['points']));
-        } catch(\Symfony\Component\Debug\Exception\ContextErrorException $e)
+            if($this->stats['points']==0)
+            $result=0;
+            else
+                $result=(100*($this->stats['points roi culled']/$this->stats['points']));
+        } catch(DivisionByZeroError $e)
         {
             $result=0;
         }
@@ -254,7 +260,7 @@ class TigerlineCache extends Tigerline
         
         if(!file_exists($dbfFilename))
         {
-           // $this->io->error("Could not find file $dbfFilename.");
+            // $this->io->error("Could not find file $dbfFilename.");
             return;
         }
         if(!file_exists($shpFilename))
@@ -293,9 +299,8 @@ class TigerlineCache extends Tigerline
         
         $this->stats['shp files']++;
         
-        $binarydata = fread($shpHandle, 100);
-        
         //main field header
+        $binarydata = fread($shpHandle, 100);
         $mfha = unpack(
         "NFileCode/NUnused4/NUnused8/NUnused12/NUnused16/NUnused20/NFileLength/IVersion/IShapeType/dXmin/dYmin/dXmax/dYmax/dZmin/dZmax/dMmin/dMmax",
         $binarydata);
@@ -356,6 +361,7 @@ class TigerlineCache extends Tigerline
             $binarydata = fread($shpHandle, 4);
             $rc = unpack("IShapeType",$binarydata);
             
+            // A M W E
             // i h p r t
             if(isset($row['ROADFLG']) && $row['ROADFLG']=='Y' && strstr($text,'Interstate Hwy'))
             $type2='i';
@@ -724,8 +730,7 @@ public function cacheCountiesList() {
             $dbfRecords = DBase::fromFile($dbfFilename);
             $this->stats['dbf files']++;
             $this->stats['dbf records']+=count($dbfRecords);
-            $this->stats['files']++;
-            
+              
             foreach ($dbfRecords as $record) {
                 //      $records[]=$record->getArrayCopy();
                 $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];

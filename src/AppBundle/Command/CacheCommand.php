@@ -47,7 +47,7 @@ class CacheCommand extends ContainerAwareCommand
         $force = $input->getOption('force',false)?true:false;
         $io->note('Force '.($force?"YES":"NO"));
         
-        if($input->getOption('states-list',false)||$input->getOption('all',false)||!($id>0))
+        if( strlen($input->getOption('states-list'))>0 || strlen($input->getOption('all')>0) )
         {
             $io->title('Cache States List');
             $files=$tigerline->cacheStatesList();
@@ -59,7 +59,15 @@ class CacheCommand extends ContainerAwareCommand
             $io->table(['id','folder','name'],$files);
         }
         
-        if($input->getOption('counties-list',false)||$input->getOption('all',false)||!($id>0))
+        else if( strlen($input->getOption('states'))>0 || strlen($input->getOption('all')>0) )
+        {
+            $io->title('Cache States Shapes');
+            $files=$tigerline->cacheStatesList();
+            
+            $records=$tigerline->cacheShapes($files,$force);
+        }
+        
+        else if( strlen($input->getOption('counties-list'))>0 || strlen($input->getOption('all'))>0 )
         {
             $io->title('Cache Counties List');
             $files=$tigerline->cacheCountiesList();
@@ -71,15 +79,7 @@ class CacheCommand extends ContainerAwareCommand
             $io->table(['id','county','full'],$files);
         }
         
-        if($input->getOption('states',false)||$input->getOption('all',false)||!($id>0))
-        {
-            $io->title('Cache States Shapes');
-            $files=$tigerline->cacheStatesList();
-            
-            $records=$tigerline->cacheShapes($files,$force);
-        }
-        
-        if($input->getOption('counties',false)||$input->getOption('all',false)||!($id>0))
+        else if( strlen($input->getOption('counties'))>0 || strlen($input->getOption('all')>0) )
         {
             $io->title('Cache Counties Shapes');
             $files=$tigerline->cacheCountiesList();
@@ -87,7 +87,7 @@ class CacheCommand extends ContainerAwareCommand
             $records=$tigerline->cacheShapes($files,$force);
         }
         
-        if($id>0) {
+        else if($id>0) {
             $io->title("Cache Id {$id}");
             
             $records=$tigerline->cacheShape($id,$force);

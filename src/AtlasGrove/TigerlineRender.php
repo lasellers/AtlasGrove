@@ -145,17 +145,17 @@ class TigerlineRender extends Tigerline
         $this->regionType=in_array($type,$this->regionTypes)?$type:$this->regionTypes[0];
     }
     
-    private $validTypes="";
+    private $validMapObjectType="";
     public function setDataLayers(string $type=null)
     {
         if($type==''|| 0 == strcasecmp($type,'All'))
         {
-            $this->validTypes=['A','M','W','E','r','t','h','i','p','C','P'];
+            $this->validMapObjectType=['A','M','W','E','r','t','h','i','p','C','P','B1','B2','B3'];
             return;
         }
         
         //
-        $this->validTypes=[];
+        $this->validMapObjectType=[];
         
         $types=explode(",",$type);
         foreach($types as $type)
@@ -178,11 +178,14 @@ class TigerlineRender extends Tigerline
                 case 'Landmark':
                     $valids=['C','P'];
                     break;
+                case 'Border':
+                    $valids=['B1','B2','B3'];
+                    break;
                 default:
                     $valids=[];
             }
             
-            $this->validTypes=array_merge($this->validTypes,$valids);
+            $this->validMapObjectType=array_merge($this->validMapObjectType,$valids);
         }
     }
     
@@ -205,7 +208,19 @@ class TigerlineRender extends Tigerline
         'roi bounding box culled'=>0,
         'roi bounding boxes culled'=>0,
         'regions'=>0,
-        'region ids'=>''
+        'region ids'=>'',
+        'A'=>0,
+        'M'=>0,
+        'W'=>0,
+        'E'=>0,
+        'i'=>0,
+        'h'=>0,
+        'p'=>0,
+        'r'=>0,
+        't'=>0,
+        'C'=>0,
+        'P'=>0,
+        'B1'=>0,'B2'=>0,'B3'=>0
         ];
     }
     private function printStatistics()
@@ -718,8 +733,7 @@ class TigerlineRender extends Tigerline
                 }
                 
             }
-            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
-            {
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e) {
                 $this->logger->error($e->getMessage());
                 
                 fclose($in);
@@ -729,8 +743,7 @@ class TigerlineRender extends Tigerline
                     unlink($cacheFilename);
                 }
             }
-            finally
-            {
+            finally {
                 if(!is_resource($in)){
                     fclose($in);
                 }
@@ -738,14 +751,21 @@ class TigerlineRender extends Tigerline
         }
     }
     
-    
+    private function isValidMapObjectType($motype)
+    {
+        if($this->validMapObjectType==''||in_array($motype,$this->validMapObjectType)) {
+            return true;
+        }
+        return false;
+    }
+
     //
     private function renderImageFromCacheInner($im,$in,$imageFilename)
     {
         //
         $backgroundcolor=$this->getColor('background');
         imagefill($im, 0, 0, $backgroundcolor);
-        // \imageantialias($im,true);
+        //imageantialias($im,true);
         
         //
         $this->arrayToFloat($this->clip);
@@ -753,19 +773,23 @@ class TigerlineRender extends Tigerline
         
         //
         imagesetthickness($im,1);
-        $this->setThickness(10);
+        $this->setThickness(1);
+        // $this->setThickness(10);
         
-        $this->renderShapeBox($im,$this->clip['Xmin'],$this->clip['Ymin'],$this->clip['Xmax'],$this->clip['Ymax'],$this->getColor('clip_box'));
-        
-        $this->renderShapeBox($im,$this->roi['Xmin'],$this->roi['Ymin'],$this->roi['Xmax'],$this->roi['Ymax'],$this->getColor('roi_box'));
-        
+        if($this->isValidMapObjectType('B1')) {
+            $this->renderShapeBox($im,$this->clip['Xmin'],$this->clip['Ymin'],$this->clip['Xmax'],$this->clip['Ymax'],$this->getColor('clip_box'));
+        }
+
+        if($this->isValidMapObjectType('B2')) {
+            $this->renderShapeBox($im,$this->roi['Xmin'],$this->roi['Ymin'],$this->roi['Xmax'],$this->roi['Ymax'],$this->getColor('roi_box'));
+        }
+
         $this->setThickness(1);
         
         //
         $text='';
         $lines=0;
-        while (!feof($in))
-        {
+        while (!feof($in)) {
             //
             $oldtext=$text;
             $text = trim(fgets($in));
@@ -778,6 +802,8 @@ class TigerlineRender extends Tigerline
             $shape=$data[0];
             $type=$data[1];
             
+            $this->stats[$type]++;
+            
             $a=explode(',',substr($data,2));
             $count=count($a);
             
@@ -788,17 +814,18 @@ class TigerlineRender extends Tigerline
             $textcolor=$this->getTextColorByType($im,$type);
             $linecolor=$this->getLineColorByType($im,$type);
             $fillcolor=$this->getFillColorByType($im,$type);
-            
+
+            if($this->isValidMapObjectType('B3')) {
+                $this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$this->getColor('select_box'));
+            }
+
             //'A','M','W','E','r','t','h','i','p','C','P'
-            if($this->validTypes==''||in_array($type,$this->validTypes))
-            {
-               // $this->renderShapeBox($im,$select['Xmin'],$select['Ymin'],$select['Xmax'],$select['Ymax'],$this->getColor('select_box'));
-                
+            if($this->isValidMapObjectType($type)) {
+
                 // draw shape
                 $this->stats['shape']++;
                 
-                switch($shape)
-                {
+                switch($shape) {
                     //point 1
                     case '*':
                         $this->renderShapePoints($im,$a,$linecolor,$fillcolor);
@@ -916,8 +943,6 @@ class TigerlineRender extends Tigerline
         
         imagesetpixel($im,$x,$y,$linecolor);
     }
-    
-    
     
     
     private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, float $lon2, int $linecolor)
@@ -1074,6 +1099,9 @@ class TigerlineRender extends Tigerline
         }
     }
     
+    // A M W E
+    // i h p r t
+    
     private function getLineColorByType($im,string $type,$alpha=0)
     {
         switch($type)
@@ -1097,6 +1125,7 @@ class TigerlineRender extends Tigerline
                 break;
             case 'p': return imagecolorallocatealpha($im,255,64,0,$alpha);
                 break;
+            
             case 'C': return imagecolorallocatealpha($im,60,80,60,$alpha);
                 break; //county
             case 'P': return imagecolorallocatealpha($im,255,255,0,$alpha);
