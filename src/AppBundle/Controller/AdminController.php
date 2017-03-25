@@ -30,16 +30,6 @@ class AdminController extends Controller
     }
     
     /**
-    * @Route("/admin/about", name="admin_about")
-    */
-    public function aboutAction()
-    {
-        return new Response(
-        '<html><body>user About route</body></html>'
-        );
-    }
-    
-    /**
     * @Route("/admin/raw/years", name="raw_years")
     */
     public function rawYearsAction(Request $request)
@@ -99,25 +89,6 @@ class AdminController extends Controller
         ]);
     }
     
-    /**
-    * @Route("/admin/raw/roads/counties", name="raw_county_roads")
-    */
-    public function rawCountyRoadsAction(Request $request)
-    {
-        $logger = $this->get('logger');
-        
-        $tigerline=new TigerlineDownloads($this->container);
-        
-        $obj=$tigerline->getCacheCounties();
-        $records=$obj['records'];
-        
-        return $this->render('default/admin/raw.html.twig', [
-        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
-        'records' => $records,
-        'map_path'=> $tigerline->getMapPath(),
-        'map_base'=> 'map/'
-        ]);
-    }
     
     
     /**
@@ -133,6 +104,92 @@ class AdminController extends Controller
         $records=$obj['records'];
         
         return $this->render('default/admin/raw.html.twig', [
+        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
+        'records' => $records,
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> 'map/'
+        ]);
+    }
+    
+    
+    
+    
+    /**
+    * @Route("/admin/id", name="admin_id")
+    */
+    public function renderIdAction(Request $request)
+    {
+        $logger = $this->get('logger');
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
+        $obj=$tigerline->getCacheFiles();
+        $records=$obj['records'];
+        
+        return $this->render('default/admin/index.html.twig', [
+        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
+        'records' => $records,
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> 'map/'
+        ]);
+    }
+    
+    
+    /**
+    * @Route("/admin/roi", name="admin_roi")
+    */
+    public function renderROIAction(Request $request)
+    {
+        $logger = $this->get('logger');
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
+        $obj=$tigerline->getCacheFiles();
+        $records=$obj['records'];
+        
+        return $this->render('default/admin/index.html.twig', [
+        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
+        'records' => $records,
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> 'map/'
+        ]);
+    }
+    
+    
+    /**
+    * @Route("/admin/states", name="admin_states")
+    */
+    public function renderStatesAction(Request $request)
+    {
+        $logger = $this->get('logger');
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
+        $obj=$tigerline->getCacheFiles();
+        $records=$obj['records'];
+        
+        return $this->render('default/admin/index.html.twig', [
+        'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
+        'records' => $records,
+        'map_path'=> $tigerline->getMapPath(),
+        'map_base'=> 'map/'
+        ]);
+    }
+    
+    
+    /**
+    * @Route("/admin/counties", name="admin_counties")
+    */
+    public function renderCountiesAction(Request $request)
+    {
+        $logger = $this->get('logger');
+        
+        $tigerline=new TigerlineDownloads($this->container);
+        
+        $obj=$tigerline->getCacheFiles();
+        $records=$obj['records'];
+        
+        return $this->render('default/admin/index.html.twig', [
         'base_dir' => realpath($this->getParameter('kernel.root_dir').'/..').DIRECTORY_SEPARATOR,
         'records' => $records,
         'map_path'=> $tigerline->getMapPath(),

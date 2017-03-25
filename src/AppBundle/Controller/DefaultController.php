@@ -43,7 +43,17 @@ class DefaultController extends Controller
         );
     }
     
-    
+        
+    /**
+    * @Route("/contact", name="contact")
+    */
+    public function contactAction()
+    {
+        return new Response(
+        '<html><body>Contact route</body></html>'
+        );
+    }
+
     /**
     * @Route("/map/states", name="map_states")
     */
@@ -86,7 +96,6 @@ class DefaultController extends Controller
     }
     
     
-    
     /**
     * @Route("/map/roi", name="map_roi")
     */
@@ -106,8 +115,7 @@ class DefaultController extends Controller
         'map_base'=> '/map/'
         ]);
     }
-    
-        
+
     
     /**
     * @Route("/map/steps", name="map_steps")
