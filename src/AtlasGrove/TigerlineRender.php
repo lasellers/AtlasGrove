@@ -142,7 +142,7 @@ class TigerlineRender extends Tigerline
     {
         if($type==''|| 0 == strcasecmp($type,'All'))
         {
-            $this->validMapObjectType=['A','M','W','E','r','t','h','i','p','C','P','B1','B2','B3'];
+            $this->validMapObjectType=['A','M','W','E','r','t','h','i','p','C','P','B1','B2','B3','X'];
             return;
         }
         
@@ -173,12 +173,16 @@ class TigerlineRender extends Tigerline
                 case 'Border':
                     $valids=['B1','B2','B3'];
                     break;
+                case 'Text':
+                    $valids=['X'];
+                    break;
                 default:
                     $valids=[];
             }
             
             $this->validMapObjectType=array_merge($this->validMapObjectType,$valids);
         }
+        $this->io->note("Object Types: ".implode(",",$this->validMapObjectType));
     }
     
     private $stats;
@@ -212,7 +216,8 @@ class TigerlineRender extends Tigerline
         't'=>0,
         'C'=>0,
         'P'=>0,
-        'B1'=>0,'B2'=>0,'B3'=>0
+        'B1'=>0,'B2'=>0,'B3'=>0,
+        'X'=>0
         ];
     }
     private function printStatistics()
@@ -837,9 +842,13 @@ class TigerlineRender extends Tigerline
                 }
                 
                 // draw text
-                if(strlen($text)>0) {
-                    $this->renderText($im,$text,$textcolor,$select);
+                if($this->isValidMapObjectType('X')) {
+                    if(strlen($text)>0) {
+                        $this->stats['X']++;
+                        $this->renderText($im,$text,$textcolor,$select);
+                    }
                 }
+                
             }
         }
         

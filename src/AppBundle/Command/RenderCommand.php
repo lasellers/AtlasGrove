@@ -124,7 +124,6 @@ class RenderCommand extends ContainerAwareCommand
         }
         //
         if(strlen($input->getOption('test'))>0) {
-            
             switch($input->getOption('test')) {
                 case "all":
                     $records=$render->renderShapeROI([
@@ -206,19 +205,15 @@ class RenderCommand extends ContainerAwareCommand
         }
         
         else if(strlen($id)>0) {
-            echo $id."\n";
             if(is_numeric($id)) {
-                echo $id."\n";
                 $roi = $input->getOption('roi');
-                echo $roi."\n";
                 if($roi) {
                     $io->title("Cache Id {$id} ROI");
                     $render->renderShapeFromROI($id);
                 } else {
                     $io->title("Cache Id {$id}");
                     $render->renderShape($id);
-                }
-                
+                }  
             }
             else {
                 
