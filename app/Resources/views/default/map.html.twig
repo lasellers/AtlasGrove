@@ -13,7 +13,10 @@
 <h3>Maps</h3>
 <ul id="">
         {% for map in maps %}
-            <li> <a href="{{map_base}}{{ map }}">{{map_base}}{{map}}<img class="map-preview" src="{{map_base}}{{ map }}"></a></li>
+            <li> 
+                <a href="{{map_base}}{{ map }}">{{map_base}}{{map}}</a><br>
+                <a href="{{map_base}}{{ map }}"><img class="map-preview" src="{{map_base}}{{ map }}"></a><br>
+            </li>
         {% endfor %}
         </ul>
 

@@ -13,7 +13,7 @@ parameters:
     cache_stored_outside_project: 1
 
     color_logo: 0x30402080
-    color_background: 0xe0e0e0 # 0xffffff
+    color_background: 0xffffff # 0xffffff
     color_foreground: 0x000000
     color_clip_box: 0xffe0e020
     color_roi_box: 0xffffe020
