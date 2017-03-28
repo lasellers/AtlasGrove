@@ -2,7 +2,7 @@
 ## By Lewis Sellers (aka Min)
 ## Intrafoundation Software
 
-(NOTE: Currently being Developed/Refactored. See CLI commands.)
+[NOTE: Currently being Developed/Refactored. CLI commands are almost complete. At some point thereafter once that has settled, a proper web admin will be made.]
 
 AtlasGrove takes Tiger/Line shapefiles from the US Census Bureau and renders them into usable images.
 
@@ -67,6 +67,10 @@ or a bound latitude/longitude region such as:
     php bin/console atlasgrove/render 47 --roi --8k --force
 Adding the --roi flag causes the roi of state 47 to be looked up and then rendered as a bound lat/long region.
 
+JPG or PNG [Todo: SVG]
+ php bin/console atlasgrove:render 47 --png
+ php bin/console atlasgrove:render 47 --jpg
+
 The layers that are rendered can be selected by a csv list such as:
     php bin/console atlasgrove:render 47001 --roi --layers=water,road,rail,landmark,area
     php bin/console atlasgrove:render 47001 --roi --layers=area,rail
@@ -96,7 +100,7 @@ The layers that are rendered can be selected by a csv list such as:
 Under Construction
 
 
-Installation
+## Installation
 
 composer update
 composer install
@@ -104,3 +108,12 @@ composer install
 php bin/console assets:install
 
 
+## Versions
+
+For detailed version history see git logs.
+
+2.0.8 March 28 2017 Semi-stable 2.x version.
+
+2.0.0 March 2017 Rebuild
+
+1.x 

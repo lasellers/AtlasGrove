@@ -33,32 +33,37 @@ class TigerlineCache extends Tigerline
     private $stats;
     public function resetStats()
     {
-        //
-        $this->stats['dbf files']=0;
-        $this->stats['shx files']=0;
-        $this->stats['shp files']=0;
-        $this->stats['shapes']=0;
+        $this->stats=[
+        'lod0'=>0,
+        'lod1'=>0,
+        'lod2'=>0,
         
-        $this->stats['point']=0;
-        $this->stats['polyline']=0;
-        $this->stats['polygon']=0;
+        'dbf files'=>0,
+        'shx files'=>0,
+        'shp files'=>0,
+        'shapes'=>0,
         
-        $this->stats['points']=0;
-        $this->stats['points out']=0;
-        $this->stats['points roi culled']=0;
+        'point'=>0,
+        'polyline'=>0,
+        'polygon'=>0,
         
-        $this->stats['arealm files']=0;
-        $this->stats['pointlm files']=0;
-        $this->stats['areawater files']=0;
-        $this->stats['edges files']=0;
+        'points'=>0,
+        'points out'=>0,
+        'points roi culled'=>0,
         
-        $this->stats['county records']=0;
-        $this->stats['place records']=0;
+        'arealm files'=>0,
+        'pointlm files'=>0,
+        'areawater files'=>0,
+        'edges files'=>0,
         
-        $this->stats['records']=0;
-        $this->stats['dbf records']=0;
-        $this->stats['shx records']=0;
-        $this->stats['shp records']=0;
+        'county records'=>0,
+        'place records'=>0,
+        
+        'records'=>0,
+        'dbf records'=>0,
+        'shx records'=>0,
+        'shp records'=>0
+        ];
     }
     
     
@@ -230,7 +235,8 @@ class TigerlineCache extends Tigerline
                 //mfha mfharecords
                 $this->cacheShapefileContents(
                 $file,
-                $cacheFilename
+                $cacheFilename,
+                $id
                 );
             }
             
@@ -252,9 +258,20 @@ class TigerlineCache extends Tigerline
         return false;
     }
     
+    //
+    private function getLod(int $id)
+    {
+        if(strlen($id)==5) {
+            return 2;
+        } else if(strlen($id)==2) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
     
     //
-    protected function cacheShapefileContents(array $fileArray, string $cacheFilename)
+    protected function cacheShapefileContents(array $fileArray, string $cacheFilename, int $id)
     {
         extract($fileArray);
         
@@ -278,16 +295,7 @@ class TigerlineCache extends Tigerline
         $record=each($dbfRecords);
         $fields=array_keys($record);
         
-        //foreach ($dbfRecords as $record)
-        // {
-        //   $fields=array_keys($record->getArrayCopy());
-        //   break;
-        // }
-        
-        // $record_numbers = count($dbfRecords);
-        
         //
-        
         $shpHandle = fopen($shpFilename, "rb");
         if($shpHandle === FALSE)
         {
@@ -306,13 +314,11 @@ class TigerlineCache extends Tigerline
         $binarydata);
         $this->printMFHAResolution($mfha);
         
-        //if(!isset($this->roi))
-        //{
         $this->roi['Xmin']=$mfha['Xmin'];
         $this->roi['Xmax']=$mfha['Xmax'];
         $this->roi['Ymin']=$mfha['Ymin'];
         $this->roi['Ymax']=$mfha['Ymax'];
-        // }
+        
         $this->rois[]=$this->roi;
         
         //
@@ -376,19 +382,26 @@ class TigerlineCache extends Tigerline
             else
                 $type2=$type;
             
-            switch($rc['ShapeType'])
-            {
-                case 1:
-                    $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
-                    break;
-                case 3:
-                    $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
-                    break;
-                case 5:
-                    $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
-                    break;
-                default:
-                    $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
+            $lod=$this->getLod($id);
+            $this->stats['lod'.$lod]++;
+            
+            if($type2=='W' && $lod==1) {
+                //ignore water on county maps
+            } else {
+                switch($rc['ShapeType'])
+                {
+                    case 1:
+                        $this->cacheShapefileTypePoint($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    case 3:
+                        $this->cacheShapefileTypePolyline($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    case 5:
+                        $this->cacheShapefileTypePolygon($shpHandle,$type2,$rh['ContentLength'],$text);
+                        break;
+                    default:
+                        $this->$this->io->warning('Unknown shape type: '.$rc['ShapeType']);
+                }
             }
             
             //
@@ -730,7 +743,7 @@ public function cacheCountiesList() {
             $dbfRecords = DBase::fromFile($dbfFilename);
             $this->stats['dbf files']++;
             $this->stats['dbf records']+=count($dbfRecords);
-              
+            
             foreach ($dbfRecords as $record) {
                 //      $records[]=$record->getArrayCopy();
                 $records[]=$record['CNTYIDFP']."\t".$record['NAME']."\t".$record['NAMELSAD'];

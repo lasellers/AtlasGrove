@@ -60,7 +60,7 @@ class CacheCommand extends ContainerAwareCommand
             $io->table(['id','folder','name'],$files);
         }
         
-        else if( $input->getOption('states') || $input->getOption('all') )
+        if( $input->getOption('states') || $input->getOption('all') )
         {
             $io->title('Cache States Shapes');
             $files=$tigerline->cacheStatesList();
@@ -68,7 +68,7 @@ class CacheCommand extends ContainerAwareCommand
             $records=$tigerline->cacheShapes($files,$force);
         }
         
-        else if( $input->getOption('counties-list') || $input->getOption('all') )
+        if( $input->getOption('counties-list') || $input->getOption('all') )
         {
             $io->title('Cache Counties List');
             $files=$tigerline->cacheCountiesList();
@@ -80,7 +80,7 @@ class CacheCommand extends ContainerAwareCommand
             $io->table(['id','county','full'],$files);
         }
         
-        else if( $input->getOption('counties') || $input->getOption('all') )
+        if( $input->getOption('counties') || $input->getOption('all') )
         {
             $io->title('Cache Counties Shapes');
             $files=$tigerline->cacheCountiesList();
@@ -88,7 +88,7 @@ class CacheCommand extends ContainerAwareCommand
             $records=$tigerline->cacheShapes($files,$force);
         }
         
-        else if($id>0) {
+         if($id>0) {
             $io->title("Cache Id {$id}");
             
             $records=$tigerline->cacheShape($id,$force);

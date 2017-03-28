@@ -48,6 +48,7 @@ class RenderCommand extends ContainerAwareCommand
         $this->addOption('states',null,InputOption::VALUE_NONE,'If set, uses states');
         $this->addOption('counties',null,InputOption::VALUE_NONE,'If set, uses counties');
         
+        $this->addOption('jpg',null,InputOption::VALUE_NONE,'If set, outputs JPG files');
         $this->addOption('png',null,InputOption::VALUE_NONE,'If set, outputs PNG files');
         $this->addOption('svg',null,InputOption::VALUE_NONE,'If set, outputs SVG files');
         
@@ -109,7 +110,7 @@ class RenderCommand extends ContainerAwareCommand
         if(strlen($lod)>0) {
             $render->setLODType($lod);
         }
-        
+
         $region = $input->getOption('region');
         if(strlen($region)>0) {
             $render->setRegionType($region);
@@ -118,10 +119,22 @@ class RenderCommand extends ContainerAwareCommand
         if($input->getOption('steps')) {
             $render->setSteps(true);
         }
+
+        if($input->getOption('png')) {
+            $render->setOutputFormat('png');
+        }
+        else if($input->getOption('jpg')) {
+            $render->setOutputFormat('jpg');
+        }
+        else if($input->getOption('svg')) {
+            $render->setOutputFormat('svg');
+        }
+
         if($input->getOption('layers')) {
             $layers=$input->getOption('layers');
             $render->setDataLayers($layers);
         }
+
         //
         if(strlen($input->getOption('test'))>0) {
             switch($input->getOption('test')) {
