@@ -28,8 +28,7 @@ class TigerlineRender extends Tigerline
         //
         $this->setThickness();
         $this->setAspectType();
-        $this->setLODType();
-        $this->setRegionType();
+         $this->setRegionType();
         $this->getFont();
         
         $this->resetstats();
@@ -144,14 +143,6 @@ class TigerlineRender extends Tigerline
     {
         $type = UCWords(strtolower($type));
         $this->aspectType=in_array($type,$this->aspectTypes)?$type:$this->aspectTypes[0];
-    }
-    
-    private $lodType;
-    private $lodTypes=["Auto","0","1","2"];
-    public function setLODType(string $type=null)
-    {
-        $type = UCWords(strtolower($type));
-        $this->lodType=in_array($type,$this->lodTypes)?$type:$this->lodTypes[0];
     }
     
     private $regionType;

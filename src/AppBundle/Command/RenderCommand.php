@@ -106,11 +106,6 @@ class RenderCommand extends ContainerAwareCommand
             $render->setAspectType($aspect);
         }
         
-        $lod = $input->getOption('lod');
-        if(strlen($lod)>0) {
-            $render->setLODType($lod);
-        }
-
         $region = $input->getOption('region');
         if(strlen($region)>0) {
             $render->setRegionType($region);
