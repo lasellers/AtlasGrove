@@ -1167,7 +1167,7 @@ private function getLineColorByType($im,string $type,$alpha=0)
     switch($type)
     {
         case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
-            break; //area landmark
+            break; //area
         case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
             break; //landmark
         case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);
@@ -1201,7 +1201,7 @@ private function getFillColorByType($im,string $type,$alpha=70)
     switch($type)
     {
         case 'A': return imagecolorallocatealpha($im,255,128,64,$alpha);
-            break; //area landmark
+            break; //area
         case 'M': return imagecolorallocatealpha($im,0,128,0,$alpha);
             break; //landmark
         case 'W': return imagecolorallocatealpha($im,0,0,200,$alpha);

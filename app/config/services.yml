@@ -18,6 +18,19 @@ parameters:
     color_clip_box: 0xffe0e020
     color_roi_box: 0xffffe020
     color_select_box: 0xe0e0ff20
+# color: outline,fill,text
+    color_default: [0x000000, 0x000000, 0xffffff]
+    color_area: [0x000000, 0x000000, 0xffffff]
+    color_landmark: [0x000000, 0x000000, 0xffffff]
+    color_water: [0x000000, 0x000000, 0xffffff]
+    color_edge: [0x000000, 0x000000, 0xffffff]
+    color_road: [0x000000, 0x000000, 0xffffff]
+    color_rail: [0x000000, 0x000000, 0xffffff]
+    color_highway: [0x000000, 0x000000, 0xffffff]
+    color_interstate: [0x000000, 0x000000, 0xffffff]
+    color_parkway: [0x000000, 0x000000, 0xffffff]
+    color_county: [0x000000, 0x000000, 0xffffff]
+    color_place: [0x000000, 0x000000, 0xffffff]
 
 services:
     #app.menu_builder:
