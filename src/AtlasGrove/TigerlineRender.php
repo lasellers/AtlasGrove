@@ -28,10 +28,26 @@ class TigerlineRender extends Tigerline
         //
         $this->setThickness();
         $this->setAspectType();
-         $this->setRegionType();
+        $this->setRegionType();
         $this->getFont();
         
         $this->resetstats();
+    }
+    
+    private $line=0;
+    private $lines;
+    private function getCacheById(string $id)
+    {
+        $cachedItems = $this->container->get('cache.app')->getItem("cache.{$id}");
+        if ($cachedItems->isHit()) {
+            return $cachedItems->get();
+        } else {
+            // $cachedItems->expiresAfter($this->getCacheTTL());
+            // $cachedItems->set($files);
+            //  $this->container->get('cache.app')->save($cachedItems);
+            return null;
+        }
+        
     }
     
     private function getImageQuality(string $format)
@@ -315,26 +331,38 @@ class TigerlineRender extends Tigerline
         
         foreach($ids as $id)
         {
-            $cacheFilename=$this->cacheIdToFilename($id);
+            // $cacheFilename=$this->cacheIdToFilename($id);
             
+            $this->getCacheById($id);
+            
+            $version = $this->lines[0];
+            
+            $this->roi=json_decode($this->lines[1],TRUE);
+            $this->arrayToFloat($this->roi);
+            if(!$this->boundingBoxCulled($this->roi)) {
+                $idsInBounds[]=$id;
+            }
+            
+            /*
             $in = fopen($cacheFilename, "rb");
             if($in)
             {
-                try {
-                    $version = trim(fgets($in));
-                    
-                    $this->roi=json_decode(trim(fgets($in)),TRUE);
-                    $this->arrayToFloat($this->roi);
-                    if(!$this->boundingBoxCulled($this->roi)) {
-                        $idsInBounds[]=$id;
-                    }
-                }
-                catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
-                {
-                    $this->logger->error($e->getMessage());
-                }
-                fclose($in);
+            try {
+            $version = trim(fgets($in));
+            
+            $this->roi=json_decode(trim(fgets($in)),TRUE);
+            $this->arrayToFloat($this->roi);
+            if(!$this->boundingBoxCulled($this->roi)) {
+            $idsInBounds[]=$id;
             }
+            }
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
+            {
+            $this->logger->error($e->getMessage());
+            }
+            fclose($in);
+            }
+            */
         }
         
         return $idsInBounds;
@@ -357,26 +385,37 @@ class TigerlineRender extends Tigerline
         
         foreach($ids as $id)
         {
-            $cacheFilename=$this->cacheIdToFilename($id);
+           // $cacheFilename=$this->cacheIdToFilename($id);
             
+            $this->getCacheById($id);
+            
+            $version = $this->lines[0];
+            
+            $roi=json_decode($this->lines[1],TRUE);
+            $this->arrayToFloat($roi);
+            if(!$this->boundingBoxCulled($roi)) {
+                $this->rois=array_merge([$roi],$this->rois,json_decode($this->lines[2],TRUE));
+            }
+            /*
             $in = fopen($cacheFilename, "rb");
             if($in)
             {
-                try {
-                    $version = trim(fgets($in));
-                    
-                    $roi=json_decode(trim(fgets($in)),TRUE);
-                    $this->arrayToFloat($roi);
-                    if(!$this->boundingBoxCulled($roi)) {
-                        $this->rois=array_merge([$roi],$this->rois,json_decode(trim(fgets($in)),TRUE));
-                    }
-                }
-                catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
-                {
-                    $this->logger->error($e->getMessage());
-                }
-                fclose($in);
+            try {
+            $version = trim(fgets($in));
+            
+            $roi=json_decode(trim(fgets($in)),TRUE);
+            $this->arrayToFloat($roi);
+            if(!$this->boundingBoxCulled($roi)) {
+            $this->rois=array_merge([$roi],$this->rois,json_decode(trim(fgets($in)),TRUE));
             }
+            }
+            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
+            {
+            $this->logger->error($e->getMessage());
+            }
+            fclose($in);
+            }
+            */
         }
         
         // 2
@@ -417,21 +456,29 @@ class TigerlineRender extends Tigerline
     {
         $cacheFilename=$this->cacheIdToFilename($id);
         
+        $this->getCacheById($id);
+        
+        $version = $this->lines[0];
+        
+        $roi=json_decode($this->lines[1],TRUE);
+        $this->arrayToFloat($roi);
+        
+        /*
         $in = fopen($cacheFilename, "rb");
         if($in)
         {
-            try {
-                $version = trim(fgets($in));
-                
-                $roi=json_decode(trim(fgets($in)),TRUE);
-                $this->arrayToFloat($roi);
-            }
-            catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
-            {
-                $this->logger->error($e->getMessage());
-            }
-            fclose($in);
+        try {
+        $version = trim(fgets($in));
+        
+        $roi=json_decode(trim(fgets($in)),TRUE);
+        $this->arrayToFloat($roi);
         }
+        catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
+        {
+        $this->logger->error($e->getMessage());
+        }
+        fclose($in);
+        }*/
         
         return $roi;
     }
@@ -574,78 +621,82 @@ private function renderImageFromROICache($im, $cacheFilename,$imageFilename)
     //
     $this->logger->info("renderImageFromCache: $cacheFilename to $imageFilename");
     
+    $this->getCacheById($id);
+    
     //
-    $in = fopen($cacheFilename, "rb");
-    if($in)
-    {
-        $this->stats['file']++;
-        $this->stats['cache']++;
-        
-        try {
-            $size=filesize($cacheFilename);
-            if($size<=0) {
-                // $this->printROI();
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
-            }
-            
-            //line 1 of cache is version
-            $version= trim(fgets($in));
-            
-            //line 2 of cache is roi
-            $this->roi=json_decode(trim(fgets($in)),TRUE);
-            $this->arrayToFloat($this->roi);
+    //  $in = fopen($cacheFilename, "rb");
+    // if($in)
+    //  {
+    $this->stats['file']++;
+    $this->stats['cache']++;
+    
+    $this->line=0;
+    
+    try {
+        $size=strlen($this->lines); //filesize($cacheFilename);
+        if($size<=0) {
             // $this->printROI();
-            if(!$this->arrayIsFloat($this->roi)) {
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
-            }
-            
-            //line 3 of cache is rois
-            fgets($in); //ignore
-            
-            //line 4 of cache is clip extended region
-            fgets($in); //ignore
-            
-            //
-            $select=$this->roi;
-            
-            //
-            $dw=(float)($this->clip['Xmax']-$this->clip['Xmin']);
-            $dh=(float)($this->clip['Ymax']-$this->clip['Ymin']);
-            $this->clip['dw']=$dw;
-            $this->clip['dh']=$dh;
-            $this->clip['aspect']=$dh/$dw;
-            /*   if( ($dh/$dw) > 3 || ($dw/$dh) > 3) {
-            $this->printClip();
-            throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip aspect is exaggerated.");
-            }
-            */
-            
-            $this->clip['width']=$this->width;
-            $this->clip['height']=$this->height;
-            
-            //
-            $zoomw=(float)((float)$this->width/$dw);
-            $zoomh=(float)((float)$this->height/$dh);
-            if($zoomw<$zoomh)
-            $zoom=$zoomw;
-            else
-                $zoom=$zoomh;
-            $this->clip['zoom']=$zoom;
-            
-            $this->io->table(
-            ['width','height','dw','dh','zoomw','zoomh','zoom','aspectType'],
-            [[$this->width,$this->height,$dw,$dh,$zoomw,$zoomh,$zoom,$this->aspectType]]
-            );
-            
-            $this->renderImageFromCacheInner($im,$in,$imageFilename);
-            
-            fclose($in);
+            throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
         }
-        catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
-        {
-            $this->logger->error($e->getMessage());
+        
+        //line 1 of cache is version
+        $version= $this->lines[$this->line++];
+        
+        //line 2 of cache is roi
+        $this->roi=json_decode($this->lines[$this->line++],TRUE);
+        $this->arrayToFloat($this->roi);
+        // $this->printROI();
+        if(!$this->arrayIsFloat($this->roi)) {
+            throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
         }
+        
+        //line 3 of cache is rois
+        $this->line++; // fgets($in); //ignore
+        
+        //line 4 of cache is clip extended region
+        $this->line++; //fgets($in); //ignore
+        
+        //
+        $select=$this->roi;
+        
+        //
+        $dw=(float)($this->clip['Xmax']-$this->clip['Xmin']);
+        $dh=(float)($this->clip['Ymax']-$this->clip['Ymin']);
+        $this->clip['dw']=$dw;
+        $this->clip['dh']=$dh;
+        $this->clip['aspect']=$dh/$dw;
+        /*   if( ($dh/$dw) > 3 || ($dw/$dh) > 3) {
+        $this->printClip();
+        throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip aspect is exaggerated.");
+        }
+        */
+        
+        $this->clip['width']=$this->width;
+        $this->clip['height']=$this->height;
+        
+        //
+        $zoomw=(float)((float)$this->width/$dw);
+        $zoomh=(float)((float)$this->height/$dh);
+        if($zoomw<$zoomh)
+        $zoom=$zoomw;
+        else
+            $zoom=$zoomh;
+        $this->clip['zoom']=$zoom;
+        
+        $this->io->table(
+        ['width','height','dw','dh','zoomw','zoomh','zoom','aspectType'],
+        [[$this->width,$this->height,$dw,$dh,$zoomw,$zoomh,$zoom,$this->aspectType]]
+        );
+        
+        $this->renderImageFromCacheInner($im,$imageFilename);
+        
+        // fclose($in);
     }
+    catch (Symfony\Component\Debug\Exception\ContextErrorException $e)
+    {
+        $this->logger->error($e->getMessage());
+    }
+//}
 }
 
 // *****************************************************************************
@@ -656,46 +707,48 @@ private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     $this->logger->info("renderImageFromSingleCache: $cacheFilename to $imageFilename");
     
     //
-    $in = fopen($cacheFilename, "rb");
-    if($in)
+    // $in = fopen($cacheFilename, "rb");
+    // if($in)
     {
         $this->stats['file']++;
         $this->stats['cache']++;
         
+        $this->line=0;
+        
         try {
-            $size=filesize($cacheFilename);
+            $size=strlen($this->lines); //filesize($cacheFilename);
             if($size<=0) {
                 return;
                 // $this->printROI();
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
+                //  throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
             }
             
             //line 1 of cache is version
-            $version= trim(fgets($in));
+            $version= $this->lines[$this->line++];
             
             //line 2 of cache is roi
-            $this->roi=json_decode(trim(fgets($in)),TRUE);
+            $this->roi=json_decode($this->lines[$this->line++],TRUE);
             $this->arrayToFloat($this->roi);
             $this->printROI();
             if(!$this->arrayIsFloat($this->roi)) {
                 return;
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
+                // throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
             }
             
             //line 3 of cache is rois
-            $this->rois=json_decode(trim(fgets($in)),TRUE);
+            $this->rois=json_decode( $this->lines[$this->line++],TRUE);
             
             //line 4 of cache is clip extended region
-            $this->clip=json_decode(trim(fgets($in)),TRUE);
+            $this->clip=json_decode( $this->lines[$this->line++],TRUE);
             if(!is_array($this->clip)) {
                 return;
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
+                // throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
             }
             $this->arrayToFloat($this->clip);
             if(!$this->arrayIsFloat($this->clip)) {
                 return;
-                $this->printClip();
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
+                //  $this->printClip();
+                //  throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
             }
             
             //
@@ -755,7 +808,7 @@ private function renderImageFromSingleCache($cacheFilename,$imageFilename)
                 $im=imagecreatetruecolor($this->clip['width'],$this->clip['height']);
             if($im !== FALSE)
             {
-                $this->renderImageFromCacheInner($im,$in,$imageFilename);
+                $this->renderImageFromCacheInner($im,$imageFilename);
                 
                 //
                 switch($this->getOutputFormat()) {
@@ -779,17 +832,17 @@ private function renderImageFromSingleCache($cacheFilename,$imageFilename)
     catch (Symfony\Component\Debug\Exception\ContextErrorException $e) {
         $this->logger->error($e->getMessage());
         
-        fclose($in);
+       /* fclose($in);
         
         if(file_exists($cacheFilename)) {
             $this->logger->error("Cache file $cachefile deleted because of read error.");
             unlink($cacheFilename);
-        }
+        }*/
     }
     finally {
-        if(!is_resource($in)){
+      /*  if(!is_resource($in)){
             fclose($in);
-        }
+        }*/
     }
 }
 }
@@ -803,7 +856,7 @@ private function isValidMapObjectType($motype)
 }
 
 //
-private function renderImageFromCacheInner($im,$in,$imageFilename)
+private function renderImageFromCacheInner($im,$imageFilename)
 {
     //
     $backgroundcolor=$this->getColor('background');
@@ -839,8 +892,8 @@ private function renderImageFromCacheInner($im,$in,$imageFilename)
     while (!feof($in)) {
         //
         $oldtext=$text;
-        $text = trim(fgets($in));
-        $data = trim(fgets($in));
+        $text = $this->lines[$this->line++];
+        $data = $this->lines[$this->line++];
         //if(feof($in)) return;
         $lines++;
         if($text=='.') $text=$oldtext;
@@ -947,7 +1000,7 @@ private function computeROIFromPointsArray(array $a): array
     }
     
     $this->roi=$this->computeRegionMids($this->roi);
-
+    
     return $this->roi;
 }
 
@@ -1257,47 +1310,5 @@ private function getThicknessByShapeAndType(string $shape,string $type): int
     return $this->thickness;
 }
 
-/*
 
-protected function minimumResolutionCull(array $roi): bool
-{
-return false;
-
-$minRes=0.00001;
-
-if(!is_array($this->clip)) {
-return false;
-}
-//$this->printArray($roi); $this->printClip();
-
-$rw=abs($roi['Xmax']-$roi['Xmin']);
-$rh=abs($roi['Ymax']-$roi['Ymin']);
-// echo "rw rh =  :$rw $rh = \n";
-
-if($rw==0 || $rh==0) {
-return true;
-}
-
-$dw=(float)abs($this->clip['Xmax']-$this->clip['Xmin']);
-$dh=(float)abs($this->clip['Ymax']-$this->clip['Ymin']);
-
-//  echo "dw/dh =  :$dw $dh = \n";
-
-if($dw==0 || $dh==0) {
-return true;
-}
-
-$w=$rw/$dw;
-$h=$rh/$dh;
-// echo "rw/dw =  :".($w)." = \n";
-//echo "rh/dh =  : ".($h)." = \n";
-
-if( ($w < $minRes) && ($h < $minRes)) {
-return true;
-}
-
-return false;
-}
-
-*/
 }

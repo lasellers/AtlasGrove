@@ -1,7 +1,7 @@
 # Learn more about services, parameters and containers at
 # http://symfony.com/doc/current/service_container.html
 parameters:
-    #parameter_name: value
+   #parameter_name: value
     web_dir: "%kernel.root_dir%/../web"
     map_dir: "%kernel.root_dir%/../web/map"
     cache_ttl: 600

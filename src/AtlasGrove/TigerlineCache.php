@@ -254,10 +254,32 @@ class TigerlineCache extends Tigerline
         $this->io->note("Rewrote $cacheFilename.");
         
         //
+        $this->saveCacheById($id,$lines);
+        
+        //
         $this->printStatistics();
         return false;
     }
     
+      private function saveCacheById(int $id, array $lines)
+    {
+        foreach($lines as &$line)
+        {
+            $line=trim($line);
+        }
+        
+         //
+        $cachedItems = $this->container->get('cache.app')->getItem("cache.{$id}");
+        //if ($cachedItems->isHit()) {
+      //      $files=$cachedItems->get();
+      //  } else {
+           // $cachedItems->expiresAfter($this->getCacheTTL());
+            $cachedItems->set($lines);
+            $this->container->get('cache.app')->save($cachedItems);
+        //}
+        
+    }
+
     //
     private function getLod(int $id)
     {
@@ -715,7 +737,7 @@ public function cacheStatesList() {
     }
     
     //
-    file_put_contents($this->getDataCachePath()."/list.states.txt",implode("\n",$records));
+    // file_put_contents($this->getDataCachePath()."/list.states.txt",implode("\n",$records));
     
     //
     return $records;
@@ -752,7 +774,7 @@ public function cacheCountiesList() {
     }
     
     //
-    file_put_contents($this->getDataCachePath()."/list.counties.txt",implode("\n",$records));
+    // file_put_contents($this->getDataCachePath()."/list.counties.txt",implode("\n",$records));
     
     //
     return $records;
