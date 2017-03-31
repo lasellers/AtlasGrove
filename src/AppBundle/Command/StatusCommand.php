@@ -1,4 +1,5 @@
 <?php
+
 namespace AppBundle\Command;
 
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -19,34 +20,31 @@ class StatusCommand extends ContainerAwareCommand
     {
         $this->setName('atlasgrove:status');
         $this->setDescription('shows AtlasGrove status');
-        
-        //$this->addOption('path', 'p', InputOption::VALUE_REQUIRED, '', getcwd());
-        $this->addOption('path', null, InputOption::VALUE_NONE, 'Optional output path');
     }
-    
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        
-        $tigerlineCache=new TigerlineCache($this->getContainer(),$io);
-        $tigerlineRender=new TigerlineRender($this->getContainer(),$io);
-        
+
+        $tigerlineCache = new TigerlineCache($this->getContainer(), $io);
+        $tigerlineRender = new TigerlineRender($this->getContainer(), $io);
+
         $io->table(
-        ['Name','Value'],
-        [
-        ['Root Path',$tigerlineCache->getRootPath()],
-        ['Root Data Path',$tigerlineCache->getRootDataPath()],
-        ['Data Path',$tigerlineCache->getDataPath()],
-        ['Data.cache Path',$tigerlineCache->getDataCachePath()],
-        ['Web Path',$tigerlineCache->getWebPath()],
-        ['Map Path',$tigerlineCache->getMapPath()],
-        ['State',$tigerlineCache->getState()],
-        ['Year',$tigerlineCache->getYear()],
-        ['Year Folder',$tigerlineCache->getYearFolder()],
-        ['Cache TTL',$tigerlineCache->getCacheTTL()],
-        ['Font',$tigerlineRender->getFont()]
-        ]
+            ['Name', 'Value'],
+            [
+                ['Root Path', $tigerlineCache->getRootPath()],
+                ['Root Data Path', $tigerlineCache->getRootDataPath()],
+                ['Data Path', $tigerlineCache->getDataPath()],
+                ['Data.cache Path', $tigerlineCache->getDataCachePath()],
+                ['Web Path', $tigerlineCache->getWebPath()],
+                ['Map Path', $tigerlineCache->getMapPath()],
+                ['State', $tigerlineCache->getState()],
+                ['Year', $tigerlineCache->getYear()],
+                ['Year Folder', $tigerlineCache->getYearFolder()],
+                ['Cache TTL', $tigerlineCache->getCacheTTL()],
+                ['Font', $tigerlineRender->getFont()]
+            ]
         );
-        
+
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace AppBundle\Command;
 
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -18,22 +19,20 @@ class DownloadCommand extends ContainerAwareCommand
     {
         $this->setName('atlasgrove:download');
         $this->setDescription('downloads Tiger/Line shapefiles to cache (parms: year, state)');
-        
+
         $this->addArgument('state', InputArgument::OPTIONAL);
         $this->addArgument('year', InputArgument::OPTIONAL);
-        
-       // $this->addOption('path', 'p', InputOption::OPTIONAL, '', getcwd());
     }
-    
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        
-        $download=new TigerlineDownload($this->getContainer(),$io);
-        
-        $state = $input->getArgument('state')?:"47";
-        $year = $input->getArgument('year')?:"2007";
-        
-        $download->download($year,$state);
+
+        $download = new TigerlineDownload($this->getContainer(), $io);
+
+        $state = $input->getArgument('state') ?: "47";
+        $year = $input->getArgument('year') ?: "2007";
+
+        $download->download($year, $state);
     }
 }
