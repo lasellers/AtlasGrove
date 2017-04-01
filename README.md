@@ -120,3 +120,15 @@ For detailed version history see git logs.
 * 2.0.0 March 2017 Rebuild
 
 * 1.x 
+
+
+# Todo
+* Add SVG export
+* Add JSON Export
+* Add more text options: All text, County names, City Names, State names
+* Make "rendered by" text more flexible.
+* Add text sizing options
+* Add "tiles" export option -- To render series of n tiles and n zoom layers
+* Add to the state + region select a zipcode select
+* Add black/white color option
+* Add multiple color sheet options
