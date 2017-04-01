@@ -1,0 +1,31 @@
+parameters:
+    #parameter_name: value
+    web_dir: "%kernel.root_dir%/../web"
+    map_dir: "%kernel.root_dir%/../web/map"
+    cache_ttl: 600
+    image_quality: 100
+    image_compressed: 0
+    image_logo: true
+    cache_precision: 0
+    cache_nodups: 0
+    cache_stored_outside_project: 1
+
+    color_logo: 0x30402080
+    color_background: 0xffffff # 0xffffff
+    color_foreground: 0x000000
+    color_clip_box: 0xffe0e020
+    color_roi_box: 0xffffe020
+    color_select_box: 0xe0e0ff20
+# color: outline,fill,text
+    color_default: [0x000000, 0x000000, 0xffffff]
+    color_area: [0x000000, 0x000000, 0xffffff]
+    color_landmark: [0x000000, 0x000000, 0xffffff]
+    color_water: [0x000000, 0x000000, 0xffffff]
+    color_edge: [0x000000, 0x000000, 0xffffff]
+    color_road: [0x000000, 0x000000, 0xffffff]
+    color_rail: [0x000000, 0x000000, 0xffffff]
+    color_highway: [0x000000, 0x000000, 0xffffff]
+    color_interstate: [0x000000, 0x000000, 0xffffff]
+    color_parkway: [0x000000, 0x000000, 0xffffff]
+    color_county: [0x000000, 0x000000, 0xffffff]
+    color_place: [0x000000, 0x000000, 0xffffff]
