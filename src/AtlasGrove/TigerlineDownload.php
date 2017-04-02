@@ -149,9 +149,15 @@ class TigerlineDownload extends Tigerline
     }
 
 
+    /**
+     * @param string $name
+     * @param $filter1
+     * @param $filter2
+     * @param bool $neg1
+     * @return array
+     */
     private function getList($name = "Counties", $filter1, $filter2, $neg1 = false)
     {
-        //
         $this->io->note("Getting $name...");
         $nlist = ftp_nlist($this->conn_id, ".");
 

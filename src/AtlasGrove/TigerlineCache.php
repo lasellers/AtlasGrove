@@ -4,10 +4,10 @@ namespace AtlasGrove;
 
 // too: refactor for consistency and error handling. remove precision? add better checks for file integrity. remove old bloat. add "us" level to cache.
 
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
+//use Symfony\Component\Console\Input\InputArgument;
+//use Symfony\Component\Console\Input\InputInterface;
+//use Symfony\Component\Console\Input\InputOption;
+//use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Debug\Exception\ContextErrorException;
@@ -23,6 +23,10 @@ class TigerlineCache extends Tigerline
 
     protected $roi;
     protected $clip;
+
+    private $lastLat = 0;
+    private $lastLon = 0;
+    private $lastShape = '';
 
     public function __construct($container, SymfonyStyle $io = null)
     {
@@ -146,7 +150,10 @@ class TigerlineCache extends Tigerline
     }
 
 
-    //
+    /**
+     * @param string $text
+     * @return string
+     */
     private function correctTextAbbreviations(string $text): string
     {
         $abbr = [
@@ -170,7 +177,6 @@ class TigerlineCache extends Tigerline
             'Rlwy' => 'Railway',
             'Frwy' => 'Freeway',
             'Trl' => 'Trail',
-            'Pk' => 'Park',
             'Plnt' => 'Plant',
             'Byp' => 'By-pass',
             'Pkwy' => 'Park-way',
@@ -190,6 +196,10 @@ class TigerlineCache extends Tigerline
         return implode(' ', $a);
     }
 
+    /**
+     * @param array $files
+     * @param bool $force
+     */
     public function cacheShapes(array $files, bool $force = false)
     {
         foreach ($files as $file) {
@@ -198,6 +208,11 @@ class TigerlineCache extends Tigerline
         }
     }
 
+    /**
+     * @param int $id
+     * @param bool $force
+     * @return bool
+     */
     public function cacheShape(int $id, bool $force = false): bool
     {
         $this->rois = [];
@@ -222,7 +237,7 @@ class TigerlineCache extends Tigerline
         }
 
         //
-        if (count($this->lines >= 4)) {
+        if (count($this->lines) >= 4) {
             $this->lines[2] = json_encode($this->rois);
             $this->lines[3] = json_encode($this->clip);
         }
@@ -236,7 +251,6 @@ class TigerlineCache extends Tigerline
     }
 
 
-
     private function cacheRawText(string $str)
     {
         $line = count($this->lines) - 1;
@@ -248,7 +262,7 @@ class TigerlineCache extends Tigerline
     {
         $line = count($this->lines) - 1;
         $line = $line > 0 ? $line : 0;
-        $this->lines[$line+1] = "\r\n$str";
+        $this->lines[$line + 1] = "\r\n$str";
     }
 
     //
@@ -267,11 +281,11 @@ class TigerlineCache extends Tigerline
     protected function cacheShapefileContents(array $fileArray, int $id)
     {
         extract($fileArray);
-       /* $dbfFilename=$fileArray['dbfFilename'];
-        $shpFilename=$fileArray['shpFilename'];
-        $prefix=$fileArray['prefix'];
-        $nameField=$fileArray['nameField'];
-        $type=$fileArray['type'];*/
+        /* $dbfFilename=$fileArray['dbfFilename'];
+         $shpFilename=$fileArray['shpFilename'];
+         $prefix=$fileArray['prefix'];
+         $nameField=$fileArray['nameField'];
+         $type=$fileArray['type'];*/
 
         if (!file_exists($dbfFilename)) {
             // $this->io->error("Could not find file $dbfFilename.");
@@ -407,7 +421,12 @@ class TigerlineCache extends Tigerline
     }
 
 
-    //
+    /**
+     * @param $handle
+     * @param string $type
+     * @param int $length
+     * @param string $text
+     */
     protected function cacheShapefileTypePoint($handle, string $type, int $length = 0, string $text = '')
     {
         $this->stats['point']++;
@@ -420,7 +439,12 @@ class TigerlineCache extends Tigerline
     }
 
 
-    //
+    /**
+     * @param $shpHandle
+     * @param string $type
+     * @param int $length
+     * @param string $text
+     */
     protected function cacheShapefileTypePolyline($shpHandle, string $type, int $length = 0, string $text = '')
     {
         $this->stats['polyline']++;
@@ -507,7 +531,12 @@ class TigerlineCache extends Tigerline
         }
     }
 
-//
+    /**
+     * @param $shpHandle
+     * @param string $type
+     * @param int $length
+     * @param string $text
+     */
     protected function cacheShapefileTypePolygon($shpHandle, string $type, int $length = 0, string $text = '')
     {
         // $this->stats['polygon']++;
@@ -588,7 +617,12 @@ class TigerlineCache extends Tigerline
     }
 
 
-//
+    /**
+     * @param float $x
+     * @param float $y
+     * @param string $type
+     * @param string $text
+     */
     protected function cacheOutPoint(float $x, float $y, string $type = ' ', string $text = '')
     {
         $x = $this->clipPrecision($x);
@@ -603,6 +637,12 @@ class TigerlineCache extends Tigerline
         $this->updateCacheClipBounds($x, $y);
     }
 
+    /**
+     * @param float $x
+     * @param float $y
+     * @param string $type
+     * @param string $text
+     */
     protected function cacheOutPolylineStart(float $x, float $y, string $type = ' ', string $text = '')
     {
         $x = $this->clipPrecision($x);
@@ -618,6 +658,10 @@ class TigerlineCache extends Tigerline
         $this->setShapePoly($x, $y, 'P');
     }
 
+    /**
+     * @param float $x
+     * @param float $y
+     */
     protected function cacheOutPolyline(float $x, float $y)
     {
         $x = $this->clipPrecision($x);
@@ -636,6 +680,12 @@ class TigerlineCache extends Tigerline
         $this->setShapePoly($x, $y, 'L');
     }
 
+    /**
+     * @param float $x
+     * @param float $y
+     * @param string $type
+     * @param string $text
+     */
     protected function cacheOutPolygonStart(float $x, float $y, string $type = ' ', string $text = '')
     {
         $x = $this->clipPrecision($x);
@@ -652,6 +702,10 @@ class TigerlineCache extends Tigerline
         $this->setShapePoly($x, $y, 'P');
     }
 
+    /**
+     * @param float $x
+     * @param float $y
+     */
     protected function cacheOutPolygon(float $x, float $y)
     {
         $x = $this->clipPrecision($x);
@@ -672,6 +726,7 @@ class TigerlineCache extends Tigerline
 
 
     /**
+     * @return array
      */
     public function cacheStatesList()
     {
@@ -697,6 +752,7 @@ class TigerlineCache extends Tigerline
 
 
     /**
+     * @return array
      */
     public function cacheCountiesList()
     {
@@ -730,6 +786,10 @@ class TigerlineCache extends Tigerline
     }
 
 
+    /**
+     * @param string $id
+     * @return array
+     */
     protected function getFilesForId(string $id): array
     {
         $files = [];
@@ -907,7 +967,10 @@ class TigerlineCache extends Tigerline
     */
 
 
-//
+    /**
+     * @param $shxFilename
+     * @return array
+     */
     public function getShx($shxFilename): array
     {
         try {

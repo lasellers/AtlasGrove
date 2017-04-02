@@ -16,7 +16,7 @@ use Monolog\Monolog;
 
 class Tigerline
 {
-    protected $version = "2.0.8";
+    protected $version = "2.0.9";
 
     protected $container;
     protected $io;

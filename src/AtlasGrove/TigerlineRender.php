@@ -12,21 +12,19 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Debug\Exception\ContextErrorException;
 
-//use org\majkel\dbase\Table AS DBase;
-
 use Monolog\Monolog;
 
 class TigerlineRender extends Tigerline
 {
-    private $lastLat = 0;
-    private $lastLon = 0;
-    private $lastShape = '';
-
+    /**
+     * TigerlineRender constructor.
+     * @param $container
+     * @param SymfonyStyle|null $io
+     */
     public function __construct($container, SymfonyStyle $io = null)
     {
         parent::__construct($container, $io);
 
-        //
         $this->setThickness();
         $this->setAspectType();
         $this->setRegionType();
@@ -35,7 +33,10 @@ class TigerlineRender extends Tigerline
         $this->resetStats();
     }
 
-
+    /**
+     * @param string $format
+     * @return int
+     */
     private function getImageQuality(string $format)
     {
         switch ($format) {
@@ -52,6 +53,7 @@ class TigerlineRender extends Tigerline
                 break;
 
             default:
+                return;
         }
     }
 
@@ -114,7 +116,10 @@ class TigerlineRender extends Tigerline
     private $fonts;
     private $font;
 
-    public function getFont()
+    /**
+     * @return string
+     */
+    public function getFont(): string
     {
         if ($this->fonts === null) {
             //
@@ -165,17 +170,17 @@ class TigerlineRender extends Tigerline
         $this->regionType = in_array($type, $this->regionTypes) ? $type : $this->regionTypes[0];
     }
 
-    private $validMapObjectType = "";
+    private $validMapObjectTypes = "";
 
     public function setDataLayers(string $type = null)
     {
         if ($type == '' || 0 == strcasecmp($type, 'All')) {
-            $this->validMapObjectType = ['A', 'M', 'W', 'E', 'r', 't', 'h', 'i', 'p', 'C', 'P', 'X'];
+            $this->validMapObjectTypes = ['A', 'M', 'W', 'E', 'r', 't', 'h', 'i', 'p', 'C', 'P', 'X'];
             return;
         }
 
         //
-        $this->validMapObjectType = [];
+        $this->validMapObjectTypes = [];
 
         $types = explode(",", $type);
         foreach ($types as $type) {
@@ -207,9 +212,9 @@ class TigerlineRender extends Tigerline
                     $valids = [];
             }
 
-            $this->validMapObjectType = array_merge($this->validMapObjectType, $valids);
+            $this->validMapObjectTypes = array_merge($this->validMapObjectTypes, $valids);
         }
-        $this->io->note("Object Types: " . implode(",", $this->validMapObjectType));
+        $this->io->note("Object Types: " . implode(",", $this->validMapObjectTypes));
     }
 
     private $stats;
@@ -576,7 +581,7 @@ class TigerlineRender extends Tigerline
     }
 
 
-    private function renderImageFromROICache($im, $id, $imageFilename)
+    private function renderImageFromROICache($im, int $id, string $imageFilename)
     {
         //
         $this->logger->info("renderImageFromCache: to $imageFilename");
@@ -591,18 +596,18 @@ class TigerlineRender extends Tigerline
             $size = count($this->lines);
             if ($size <= 0) {
                 // $this->printROI();
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("Cached shapes file blank.");
+                throw ContextErrorException("Cached shapes file blank.");
             }
 
             //line 1 of cache is version
-            $version = $this->getRawLine();
+            $this->getRawLine();
 
             //line 2 of cache is roi
             $this->roi = json_decode($this->getRawLine(), TRUE);
             $this->arrayToFloat($this->roi);
             // $this->printROI();
             if (!$this->arrayIsFloat($this->roi)) {
-                throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
+                throw ContextErrorException("ROI is not valid.");
             }
 
             //line 3 of cache is rois
@@ -637,7 +642,7 @@ class TigerlineRender extends Tigerline
                 [[$this->width, $this->height, $dw, $dh, $zoomw, $zoomh, $zoom, $this->aspectType]]
             );
 
-            $this->renderImageFromCacheInner($im, $imageFilename);
+            $this->renderImageFromCacheInner($im);
 
         } catch (ContextErrorException $e) {
             $this->logger->error($e->getMessage());
@@ -658,7 +663,6 @@ class TigerlineRender extends Tigerline
         $this->line = 0;
 
         try {
-
             //line 1 of cache is version
             $version = $this->getRawLine();
 
@@ -668,7 +672,7 @@ class TigerlineRender extends Tigerline
             $this->printROI();
             if (!$this->arrayIsFloat($this->roi)) {
                 return;
-                // throw \Symfony\Component\Debug\Exception\ContextErrorException("ROI is not valid.");
+                // throw ContextErrorException("ROI is not valid.");
             }
 
             //line 3 of cache is rois
@@ -678,13 +682,13 @@ class TigerlineRender extends Tigerline
             $this->clip = json_decode($this->getRawLine(), TRUE);
             if (!is_array($this->clip)) {
                 return;
-                // throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
+                // throw ContextErrorException("Clip is not valid.");
             }
             $this->arrayToFloat($this->clip);
             if (!$this->arrayIsFloat($this->clip)) {
                 return;
                 //  $this->printClip();
-                //  throw \Symfony\Component\Debug\Exception\ContextErrorException("Clip is not valid.");
+                //  throw ContextErrorException("Clip is not valid.");
             }
 
             //
@@ -736,7 +740,7 @@ class TigerlineRender extends Tigerline
             else
                 $im = imagecreatetruecolor($this->clip['width'], $this->clip['height']);
             if ($im !== FALSE) {
-                $this->renderImageFromCacheInner($im, $imageFilename);
+                $this->renderImageFromCacheInner($im);
 
                 //
                 switch ($this->getOutputFormat()) {
@@ -767,14 +771,14 @@ class TigerlineRender extends Tigerline
 
     private function isValidMapObjectType($mapObjectType)
     {
-        if ($this->validMapObjectType == '' || in_array($mapObjectType, $this->validMapObjectType)) {
+        if ($this->validMapObjectTypes == '' || in_array($mapObjectType, $this->validMapObjectTypes)) {
             return true;
         }
         return false;
     }
 
 //
-    private function renderImageFromCacheInner($im, $imageFilename)
+    private function renderImageFromCacheInner($im)
     {
         //
         $backgroundcolor = $this->getColor('background');
@@ -882,7 +886,10 @@ class TigerlineRender extends Tigerline
 
     }
 
-//
+    /**
+     * @param array $a
+     * @return array
+     */
     private function computeROIFromPointsArray(array $a): array
     {
         $this->roi = [
@@ -912,7 +919,12 @@ class TigerlineRender extends Tigerline
     }
 
 
-//
+    /**
+     * @param $im
+     * @param string $text
+     * @param $fontColor
+     * @param array $select
+     */
     private function renderText($im, string $text, $fontColor, array $select)
     {
         $text = trim($text);
@@ -947,7 +959,12 @@ class TigerlineRender extends Tigerline
         imagettftext($im, $fontsize, $rotation, $x, $y, $textColor, $this->font, $text);
     }
 
-
+    /**
+     * @param $im
+     * @param float $lat
+     * @param float $lon
+     * @param int $lineColor
+     */
     private function renderShapePoint($im, float $lat, float $lon, int $lineColor)
     {
         $this->stats['point']++;
@@ -959,6 +976,14 @@ class TigerlineRender extends Tigerline
     }
 
 
+    /**
+     * @param $im
+     * @param float $lat1
+     * @param float $lon1
+     * @param float $lat2
+     * @param float $lon2
+     * @param int $lineColor
+     */
     private function renderShapeBox($im, float $lat1, float $lon1, float $lat2, float $lon2, int $lineColor)
     {
         $this->stats['box']++;
@@ -969,6 +994,14 @@ class TigerlineRender extends Tigerline
         $this->renderShapeLine($im, $lat2, $lon1, $lat2, $lon2, $lineColor);
     }
 
+    /**
+     * @param $im
+     * @param float $lat1
+     * @param float $lon1
+     * @param float $lat2
+     * @param float $lon2
+     * @param int $lineColor
+     */
     private function renderShapeLine($im, float $lat1, float $lon1, float $lat2, float $lon2, int $lineColor)
     {
         $this->stats['lines']++;
@@ -986,6 +1019,14 @@ class TigerlineRender extends Tigerline
         imageline($im, $x1, $this->clip['height'] - $y1, $x2, $this->clip['height'] - $y2, $lineColor);
     }
 
+    /**
+     * @param $im
+     * @param float $lat1
+     * @param float $lon1
+     * @param float $lat2
+     * @param float $lon2
+     * @param $lineColor
+     */
     private function renderShapeThickline($im, float $lat1, float $lon1, float $lat2, float $lon2, $lineColor)
     {
         if ($this->thickness <= 1) {
@@ -1019,6 +1060,11 @@ class TigerlineRender extends Tigerline
         imagefilledpolygon($im, $p, count($p) / 2, $lineColor);
     }
 
+    /**
+     * @param $im
+     * @param array $a
+     * @param int $lineColor
+     */
     private function renderShapePoints($im, array $a, int $lineColor)
     {
         $count = count($a);
@@ -1037,7 +1083,12 @@ class TigerlineRender extends Tigerline
         }
     }
 
-    private function renderShapePolyline($im, array $a, $lineColor)
+    /**
+     * @param $im
+     * @param array $a
+     * @param $lineColor
+     */
+    private function renderShapePolyline($im, array $a, int $lineColor)
     {
         $count = count($a);
 
@@ -1058,7 +1109,7 @@ class TigerlineRender extends Tigerline
         }
     }
 
-    private function renderShapePolygon($im, array $a, $lineColor, $fillColor)
+    private function renderShapePolygon($im, array $a, int $lineColor, int $fillColor)
     {
         $count = count($a);
 
